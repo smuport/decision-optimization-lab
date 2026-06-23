@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Decision Optimization Lab Evaluation Result",
+  "type": "object",
+  "required": [
+    "status",
+    "isFeasible",
+    "runtimeMs",
+    "score",
+    "scoreItems",
+    "messages"
+  ],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "SUCCESS",
+        "PARTIAL",
+        "FAILED",
+        "TIMEOUT",
+        "RUNTIME_ERROR",
+        "WRONG_ANSWER",
+        "INVALID_OUTPUT"
+      ]
+    },
+    "isFeasible": {
+      "type": "boolean"
+    },
+    "objective": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "optimalObjective": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "gap": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "runtimeMs": {
+      "type": "number",
+      "minimum": 0
+    },
+    "memoryMb": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "scoreItems": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number"
+      }
+    },
+    "metrics": {
+      "type": "object"
+    },
+    "visualization": {
+      "type": "object"
+    },
+    "messages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "artifacts": {
+      "type": "object"
+    }
+  }
+}

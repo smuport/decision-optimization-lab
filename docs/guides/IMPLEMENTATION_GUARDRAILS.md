@@ -1,0 +1,202 @@
+# Implementation Guardrails
+
+> This document prevents implementation drift. If a requested change conflicts with this file, ask the user before proceeding.
+
+---
+
+## 1. Non-Negotiable Week2 Scope
+
+Week2 builds a usable MVP platform skeleton, not the full online judge.
+
+Allowed in Week2:
+
+- Angular frontend.
+- NestJS backend.
+- Prisma schema and seed.
+- PostgreSQL.
+- `packages/shared` DTO/schema/type package.
+- `pnpm workspace + Turborepo`.
+- Local runner adapter using `runner/evaluate.py`.
+- Local file storage for submissions and results.
+- Detailed `case_01` teaching sample.
+- Placeholder report entry in submission detail.
+- Placeholder manual grading entry in teacher panel.
+
+Not allowed in Week2 unless the plan is explicitly updated:
+
+- Redis.
+- BullMQ.
+- MinIO.
+- Independent FastAPI evaluator.
+- Docker sandbox.
+- WebSocket result push.
+- Leaderboard.
+- Monaco editor.
+- Full report editor, attachments, comments, or grading workflow.
+- Full production deployment.
+
+---
+
+## 2. Data Model Guardrails
+
+Week2 MVP database includes:
+
+- `User`
+- `Course`
+- `Term`
+- `ClassSection`
+- `Enrollment`
+- `Case`
+- `Exercise`
+- `Assignment`
+- `Dataset`
+- `Template`
+- `Rubric`
+- `Submission`
+- `RunResult`
+- `Score`
+- `Report`
+- `ManualGrade`
+
+Do not add `Leaderboard`, `AuditLog`, `SystemConfig`, MinIO object tables, or full feedback/comment models in Week2 unless confirmed.
+
+---
+
+## 3. Shared Model Guardrails
+
+Use this separation:
+
+```text
+Prisma schema / Prisma Client
+= backend persistence model
+
+packages/shared
+= frontend/backend API contract
+```
+
+Rules:
+
+- `@prisma/client` is backend-only.
+- Frontend imports API types from `@decision-lab/shared`.
+- Backend controller DTOs and response types should use `@decision-lab/shared` where practical.
+- Shared package may contain DTOs, enums, Zod schemas, and API response types.
+- Do not expose `passwordHash`, activation secrets, internal paths, or hidden dataset details to frontend DTOs.
+
+---
+
+## 4. API Guardrails
+
+Use API routes from `docs/design/BACKEND_API_DESIGN.md`.
+
+Important Week2 route:
+
+```text
+POST /api/v1/assignments/:id/submissions
+```
+
+Do not replace it with:
+
+```text
+POST /api/v1/submissions
+```
+
+Submission response should preserve future async compatibility:
+
+```json
+{
+  "submissionId": "sub_001",
+  "status": "QUEUED",
+  "statusUrl": "/api/v1/submissions/sub_001",
+  "resultUrl": "/api/v1/submissions/sub_001/results"
+}
+```
+
+Week2 may execute runner synchronously, but API shape should not block future async queue migration.
+
+---
+
+## 5. Frontend Guardrails
+
+Week2 frontend pages:
+
+- `/auth/login`
+- `/`
+- `/cases/:caseId`
+- `/exercises/:exerciseId/workspace`
+- `/submissions/:submissionId`
+- `/teacher`
+
+The workspace should follow:
+
+```text
+left: problem/data/rubric
+center: code textarea
+right: result/report placeholder
+```
+
+Use textarea for Week2. Do not introduce Monaco unless the plan changes.
+
+---
+
+## 6. Monorepo Guardrails
+
+Use:
+
+```text
+pnpm workspace + Turborepo
+```
+
+Do not introduce Nx in Week2. Preserve future Nx migration by:
+
+- Keeping project-level `package.json` files.
+- Keeping consistent scripts: `dev`, `build`, `typecheck`, `test`, `lint`.
+- Keeping shared imports via package name.
+- Keeping `tsconfig.base.json`.
+
+---
+
+## 7. Case01 Guardrails
+
+`case_01` is the only Week2 deep teaching sample.
+
+It must include:
+
+- Problem introduction.
+- A/B product production scenario.
+- Objective and constraints.
+- Model construction guide.
+- PuLP guide.
+- Dataset table.
+- Template code.
+- Submission flow.
+- Structured result feedback.
+
+`case_04` and `case_16` only need basic metadata availability in Week2.
+
+---
+
+## 8. Documentation Guardrails
+
+When implementation changes design or scope, update documents immediately:
+
+- Architecture change: `docs/design/ARCHITECTURE.md`
+- Project structure change: `docs/design/PROJECT_STRUCTURE.md`
+- API change: `docs/design/BACKEND_API_DESIGN.md`
+- Database change: `docs/design/DATABASE_DESIGN.md`
+- Plan change: `docs/plans/WEEK2_BUILD_PLAN.md`
+- Current state change: `docs/PROJECT_STATE.md`
+- New major decision: `docs/decisions/ADR-xxxx-*.md`
+
+---
+
+## 9. Stop-and-Ask Conditions
+
+Stop and ask the user before proceeding if:
+
+- A design document conflicts with the active plan.
+- A requested change would add a Week2-forbidden technology.
+- A requested change would expose Prisma Client types to frontend.
+- A requested change would delete or overwrite legacy assets.
+- A requested change requires GitHub remote creation, push, force push, or visibility change.
+- Local files contain user changes that conflict with the current task.
+

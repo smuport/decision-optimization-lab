@@ -1,0 +1,33 @@
+{
+  "course": {
+    "code": "engineering-decision-optimization",
+    "name": "工程系统决策与优化",
+    "audience": "研究生",
+    "version": "1.0-week1"
+  },
+  "asset_schema_version": "0.1.0",
+  "allowed_dependencies": [
+    "python>=3.11",
+    "pulp==2.8.0",
+    "numpy==1.26.4",
+    "matplotlib==3.8.4",
+    "scipy==1.11.4",
+    "networkx==3.2.1"
+  ],
+  "result_schema": "../../runner/schemas/result.schema.json",
+  "pilot_cases": [
+    {
+      "case_id": "case_01",
+      "manifest": "../cases/case_01/case_manifest.json"
+    },
+    {
+      "case_id": "case_04",
+      "manifest": "../cases/case_04/case_manifest.json"
+    },
+    {
+      "case_id": "case_16",
+      "manifest": "../cases/case_16/case_manifest.json"
+    }
+  ],
+  "week1_goal": "跑通首批 3 类案例的标准化资产与最小本地评测闭环"
+}

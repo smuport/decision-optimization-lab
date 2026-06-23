@@ -1,0 +1,50 @@
+{
+  "case_id": "case_01",
+  "title": "生产分配问题",
+  "subtitle": "从线性规划入门到影子价格理解",
+  "type": "EXACT_MODELING",
+  "difficulty": "EASY",
+  "knowledge_points": [
+    "线性规划建模",
+    "PuLP 求解",
+    "资源约束",
+    "影子价格",
+    "对偶问题"
+  ],
+  "source": {
+    "readme": "../../../../非全日制决策优化课03/case_01/README.md",
+    "reference_solution": "../../../../非全日制决策优化课03/case_01/solve.py"
+  },
+  "datasets": [
+    {
+      "id": "small",
+      "label": "小规模",
+      "visibility": "PUBLIC",
+      "path": "../../../../非全日制决策优化课03/case_01/data_small.json"
+    },
+    {
+      "id": "medium",
+      "label": "中规模",
+      "visibility": "PUBLIC",
+      "path": "../../../../非全日制决策优化课03/case_01/data_medium.json"
+    },
+    {
+      "id": "large",
+      "label": "大规模",
+      "visibility": "PUBLIC",
+      "path": "../../../../非全日制决策优化课03/case_01/data_large.json"
+    }
+  ],
+  "template": "template.py",
+  "validator": "validator.py",
+  "rubric": "rubric.json",
+  "entrypoint": "solve",
+  "expected_output": {
+    "objective": "number",
+    "solution": "dict: product -> quantity",
+    "metrics": {
+      "shadow_prices": "dict: resource -> number",
+      "resource_usage": "dict: resource -> number"
+    }
+  }
+}

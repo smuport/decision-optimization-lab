@@ -1,0 +1,42 @@
+{
+  "status": "SUCCESS",
+  "isFeasible": true,
+  "objective": 46.66666666666667,
+  "optimalObjective": 46.666666666666664,
+  "gap": 0.0,
+  "runtimeMs": 0.018,
+  "memoryMb": null,
+  "score": 95.0,
+  "scoreItems": {
+    "feasibility": 20,
+    "optimality": 35,
+    "objective_consistency": 10,
+    "dual_shadow_price": 20,
+    "robustness": 10
+  },
+  "metrics": {
+    "resourceUsage": {
+      "原料(吨)": 20.0,
+      "工时(小时)": 20.0
+    },
+    "resourceViolation": {
+      "原料(吨)": 0.0,
+      "工时(小时)": 0.0
+    },
+    "objectiveError": 0.0,
+    "optimalSolution": {
+      "产品A": 6.666666666666666,
+      "产品B": 6.666666666666667
+    }
+  },
+  "visualization": {},
+  "messages": [
+    "可行解，目标值 gap=0.0000%"
+  ],
+  "artifacts": {
+    "caseId": "case_01",
+    "datasetId": "small",
+    "submission": "decision-optimization-lab/runner/demo_submissions/case_01_demo.py",
+    "output": "decision-optimization-lab/runner/output/case_01_demo_result.json"
+  }
+}

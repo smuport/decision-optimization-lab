@@ -1,0 +1,72 @@
+{
+  "status": "SUCCESS",
+  "isFeasible": true,
+  "objective": 479.834218882758,
+  "optimalObjective": 479.834218882758,
+  "gap": 0.0,
+  "runtimeMs": 0.221,
+  "memoryMb": null,
+  "score": 85.0,
+  "scoreItems": {
+    "route_feasibility": 25,
+    "solution_quality": 35,
+    "efficiency": 15,
+    "convergence": 10
+  },
+  "metrics": {
+    "objectiveError": 0.0,
+    "iterations": 4.0,
+    "baselineRoute": [
+      0,
+      4,
+      11,
+      6,
+      12,
+      7,
+      14,
+      13,
+      5,
+      10,
+      2,
+      3,
+      8,
+      9,
+      1
+    ],
+    "cityCount": 15
+  },
+  "visualization": {
+    "route": [
+      0,
+      4,
+      11,
+      6,
+      12,
+      7,
+      14,
+      13,
+      5,
+      10,
+      2,
+      3,
+      8,
+      9,
+      1
+    ],
+    "convergence": [
+      516.1013740287679,
+      513.0435822465371,
+      495.3019865354527,
+      479.834218882758
+    ]
+  },
+  "messages": [
+    "合法路线，较最近邻+2opt基准 gap=0.0000%"
+  ],
+  "artifacts": {
+    "caseId": "case_16",
+    "datasetId": "small",
+    "submission": "decision-optimization-lab/runner/demo_submissions/case_16_demo.py",
+    "output": "decision-optimization-lab/runner/output/case_16_demo_result.json"
+  }
+}

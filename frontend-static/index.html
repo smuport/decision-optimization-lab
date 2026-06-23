@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>工程系统决策与优化实验平台 1.0</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Decision Optimization Lab 1.0</p>
+        <h1 id="course-title">工程系统决策与优化</h1>
+      </div>
+      <nav class="top-actions" aria-label="页面导航">
+        <a href="#cases">案例</a>
+        <a href="#results">评测</a>
+        <a href="#next">下一步</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow">本周构建进度</p>
+          <h2 id="hero-title">首批 3 类案例已接入本地评测闭环</h2>
+          <p id="week-goal" class="hero-text"></p>
+          <div id="summary-grid" class="summary-grid"></div>
+        </div>
+        <div class="visual-panel" aria-label="评测通过率概览">
+          <canvas id="status-canvas" width="420" height="260"></canvas>
+        </div>
+      </section>
+
+      <section id="cases" class="section">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Pilot cases</p>
+            <h2>首批案例</h2>
+          </div>
+          <div class="segmented" role="group" aria-label="案例筛选">
+            <button class="is-active" data-filter="ALL" type="button">全部</button>
+            <button data-filter="EXACT_MODELING" type="button">精确建模</button>
+            <button data-filter="HEURISTIC" type="button">启发式</button>
+          </div>
+        </div>
+        <div id="case-list" class="case-grid"></div>
+      </section>
+
+      <section class="section detail-layout" aria-live="polite">
+        <article id="case-detail" class="detail-panel"></article>
+        <aside class="detail-panel">
+          <p class="eyebrow">接口契约</p>
+          <h2>统一提交格式</h2>
+          <pre><code>def solve(data, params=None):
+    return {
+        "objective": 0,
+        "solution": {},
+        "metrics": {},
+        "visualization": {}
+    }</code></pre>
+          <p class="muted">Day 5 静态门户只展示案例和评测摘要；Day 6 再补最小提交服务设计。</p>
+        </aside>
+      </section>
+
+      <section id="results" class="section">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Runner outputs</p>
+            <h2>评测结果摘要</h2>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>样例</th>
+                <th>案例</th>
+                <th>状态</th>
+                <th>可行</th>
+                <th>目标值</th>
+                <th>GAP</th>
+                <th>分数</th>
+              </tr>
+            </thead>
+            <tbody id="result-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="next" class="section next-step">
+        <div>
+          <p class="eyebrow">Day 6</p>
+          <h2>下一步：最小后端/提交流设计</h2>
+          <p class="muted">目标是模拟上传、评测和查看结果，不引入完整生产级队列或对象存储。</p>
+        </div>
+        <div class="next-grid">
+          <div>提交目录</div>
+          <div>状态文件</div>
+          <div>结果查询</div>
+          <div>教师视图</div>
+        </div>
+      </section>
+    </main>
+
+    <script src="./portal-data.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

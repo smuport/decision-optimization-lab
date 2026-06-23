@@ -1,0 +1,65 @@
+{
+  "status": "FAILED",
+  "isFeasible": false,
+  "objective": 18.0,
+  "optimalObjective": 13.0,
+  "gap": null,
+  "runtimeMs": 0.001,
+  "memoryMb": null,
+  "score": 15.0,
+  "scoreItems": {
+    "feasibility": 5,
+    "optimality": 0,
+    "rectangular_robustness": 0,
+    "efficiency": 10
+  },
+  "metrics": {
+    "assignmentCount": 2,
+    "objectiveError": 18.0,
+    "optimalAssignment": [
+      {
+        "worker": "张工",
+        "task": "项目Beta"
+      },
+      {
+        "worker": "李工",
+        "task": "项目Alpha"
+      },
+      {
+        "worker": "王工",
+        "task": "项目Gamma"
+      },
+      {
+        "worker": "赵工",
+        "task": "项目Delta"
+      }
+    ]
+  },
+  "visualization": {
+    "assignments": [
+      {
+        "worker": "张工",
+        "task": "项目Alpha",
+        "cost": 9
+      },
+      {
+        "worker": "张工",
+        "task": "项目Alpha",
+        "cost": 9
+      }
+    ]
+  },
+  "messages": [
+    "工人重复分配: 张工",
+    "任务重复分配: 项目Alpha",
+    "存在未分配工人: 李工, 王工, 赵工",
+    "存在未完成任务: 项目Beta, 项目Gamma, 项目Delta",
+    "申报 objective 与分配成本不一致，误差 18"
+  ],
+  "artifacts": {
+    "caseId": "case_04",
+    "datasetId": "small",
+    "submission": "decision-optimization-lab/runner/demo_submissions/case_04_bad.py",
+    "output": "decision-optimization-lab/runner/output/case_04_bad_result.json"
+  }
+}

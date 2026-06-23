@@ -1,0 +1,33 @@
+{
+  "case_id": "case_04",
+  "version": 1,
+  "total": 100,
+  "items": [
+    {
+      "id": "feasibility",
+      "label": "每人/每任务分配约束",
+      "points": 30
+    },
+    {
+      "id": "optimality",
+      "label": "总成本与最优值质量",
+      "points": 35
+    },
+    {
+      "id": "rectangular_robustness",
+      "label": "非方阵和虚拟行列处理",
+      "points": 15
+    },
+    {
+      "id": "efficiency",
+      "label": "运行效率",
+      "points": 10
+    },
+    {
+      "id": "report",
+      "label": "实验报告与算法解释",
+      "points": 10,
+      "manual": true
+    }
+  ]
+}

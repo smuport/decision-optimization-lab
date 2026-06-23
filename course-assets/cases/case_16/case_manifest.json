@@ -1,0 +1,53 @@
+{
+  "case_id": "case_16",
+  "title": "模拟退火算法求解 TSP",
+  "subtitle": "用 2-opt 邻域和 Metropolis 准则求解旅行商问题",
+  "type": "HEURISTIC",
+  "difficulty": "HARD",
+  "knowledge_points": [
+    "TSP",
+    "模拟退火",
+    "2-opt",
+    "Metropolis 准则",
+    "收敛曲线"
+  ],
+  "source": {
+    "readme": "../../../../case_16/README.md",
+    "reference_solution": "../../../../case_16/solve.py"
+  },
+  "datasets": [
+    {
+      "id": "small",
+      "label": "小规模",
+      "visibility": "PUBLIC",
+      "path": "../../../../case_16/data_small.json"
+    },
+    {
+      "id": "medium",
+      "label": "中规模",
+      "visibility": "PUBLIC",
+      "path": "../../../../case_16/data_medium.json"
+    },
+    {
+      "id": "large",
+      "label": "大规模",
+      "visibility": "PUBLIC",
+      "path": "../../../../case_16/data_large.json"
+    }
+  ],
+  "template": "template.py",
+  "validator": "validator.py",
+  "rubric": "rubric.json",
+  "entrypoint": "solve",
+  "expected_output": {
+    "objective": "number",
+    "solution": "list of city indices",
+    "metrics": {
+      "iterations": "number",
+      "seed": "optional number"
+    },
+    "visualization": {
+      "convergence": "optional list of best objective values"
+    }
+  }
+}

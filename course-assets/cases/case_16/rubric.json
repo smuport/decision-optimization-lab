@@ -1,0 +1,33 @@
+{
+  "case_id": "case_16",
+  "version": 1,
+  "total": 100,
+  "items": [
+    {
+      "id": "route_feasibility",
+      "label": "路线排列合法性",
+      "points": 25
+    },
+    {
+      "id": "solution_quality",
+      "label": "路线长度与基准 GAP",
+      "points": 35
+    },
+    {
+      "id": "efficiency",
+      "label": "运行时间与规模适应性",
+      "points": 15
+    },
+    {
+      "id": "convergence",
+      "label": "收敛数据与可视化输出",
+      "points": 10
+    },
+    {
+      "id": "report",
+      "label": "参数分析报告",
+      "points": 15,
+      "manual": true
+    }
+  ]
+}

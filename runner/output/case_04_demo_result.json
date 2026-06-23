@@ -1,0 +1,71 @@
+{
+  "status": "SUCCESS",
+  "isFeasible": true,
+  "objective": 13.0,
+  "optimalObjective": 13.0,
+  "gap": 0.0,
+  "runtimeMs": 0.016,
+  "memoryMb": null,
+  "score": 90.0,
+  "scoreItems": {
+    "feasibility": 30,
+    "optimality": 35,
+    "rectangular_robustness": 15,
+    "efficiency": 10
+  },
+  "metrics": {
+    "assignmentCount": 4,
+    "objectiveError": 0.0,
+    "optimalAssignment": [
+      {
+        "worker": "张工",
+        "task": "项目Beta"
+      },
+      {
+        "worker": "李工",
+        "task": "项目Alpha"
+      },
+      {
+        "worker": "王工",
+        "task": "项目Gamma"
+      },
+      {
+        "worker": "赵工",
+        "task": "项目Delta"
+      }
+    ]
+  },
+  "visualization": {
+    "assignments": [
+      {
+        "worker": "张工",
+        "task": "项目Beta",
+        "cost": 2
+      },
+      {
+        "worker": "李工",
+        "task": "项目Alpha",
+        "cost": 6
+      },
+      {
+        "worker": "王工",
+        "task": "项目Gamma",
+        "cost": 1
+      },
+      {
+        "worker": "赵工",
+        "task": "项目Delta",
+        "cost": 4
+      }
+    ]
+  },
+  "messages": [
+    "可行分配，成本 gap=0.0000%"
+  ],
+  "artifacts": {
+    "caseId": "case_04",
+    "datasetId": "small",
+    "submission": "decision-optimization-lab/runner/demo_submissions/case_04_demo.py",
+    "output": "decision-optimization-lab/runner/output/case_04_demo_result.json"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "status": "FAILED",
+  "isFeasible": false,
+  "objective": null,
+  "optimalObjective": 479.834218882758,
+  "gap": null,
+  "runtimeMs": 0.003,
+  "memoryMb": null,
+  "score": 0.0,
+  "scoreItems": {
+    "route_feasibility": 0,
+    "solution_quality": 0,
+    "efficiency": 0,
+    "convergence": 0
+  },
+  "metrics": {
+    "objectiveError": null,
+    "iterations": null,
+    "baselineRoute": [
+      0,
+      4,
+      11,
+      6,
+      12,
+      7,
+      14,
+      13,
+      5,
+      10,
+      2,
+      3,
+      8,
+      9,
+      1
+    ],
+    "cityCount": 15
+  },
+  "visualization": {
+    "route": [],
+    "convergence": []
+  },
+  "messages": [
+    "路线缺少城市: [14]",
+    "路线存在重复城市",
+    "visualization.convergence 缺失或不是数字列表",
+    "metrics.iterations 缺失或不是数字"
+  ],
+  "artifacts": {
+    "caseId": "case_16",
+    "datasetId": "small",
+    "submission": "decision-optimization-lab/runner/demo_submissions/case_16_bad.py",
+    "output": "decision-optimization-lab/runner/output/case_16_bad_result.json"
+  }
+}

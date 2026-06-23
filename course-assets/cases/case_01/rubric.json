@@ -1,0 +1,33 @@
+{
+  "case_id": "case_01",
+  "version": 1,
+  "total": 100,
+  "items": [
+    {
+      "id": "feasibility",
+      "label": "资源约束可行性",
+      "points": 20
+    },
+    {
+      "id": "optimality",
+      "label": "目标值与最优解质量",
+      "points": 35
+    },
+    {
+      "id": "dual_shadow_price",
+      "label": "影子价格与对偶指标",
+      "points": 20
+    },
+    {
+      "id": "robustness",
+      "label": "不同规模数据鲁棒性",
+      "points": 10
+    },
+    {
+      "id": "report",
+      "label": "实验报告与经济含义解释",
+      "points": 15,
+      "manual": true
+    }
+  ]
+}

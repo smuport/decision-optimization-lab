@@ -1,0 +1,213 @@
+version: '3.8'
+
+services:
+  # ============================================
+  # 数据库服务
+  # ============================================
+  db:
+    image: postgres:16-alpine
+    container_name: do-lab-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+      POSTGRES_DB: ${POSTGRES_DB:-decision_opt_lab}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - lab-network
+
+  # ============================================
+  # Redis 缓存 + 任务队列
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: do-lab-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - lab-network
+
+  # ============================================
+  # MinIO 对象存储
+  # ============================================
+  minio:
+    image: minio/minio:latest
+    container_name: do-lab-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - lab-network
+
+  # ============================================
+  # 后端服务 (NestJS)
+  # ============================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: do-lab-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres123}@db:5432/${POSTGRES_DB:-decision_opt_lab}?schema=public
+      REDIS_URL: redis://redis:6379
+      MINIO_ENDPOINT: minio:9000
+      MINIO_USE_SSL: "false"
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+      MINIO_BUCKET: ${MINIO_BUCKET:-decision-opt-lab}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      EVALUATOR_URL: http://evaluator:8000
+      EVALUATION_TIMEOUT: ${EVALUATION_TIMEOUT:-60}
+      EVALUATION_MEMORY_LIMIT: ${EVALUATION_MEMORY_LIMIT:-512}
+      EVALUATION_CONCURRENCY: ${EVALUATION_CONCURRENCY:-4}
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - lab-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================
+  # 评测服务 (Python FastAPI)
+  # ============================================
+  evaluator:
+    build:
+      context: ./evaluator
+      dockerfile: Dockerfile
+    container_name: do-lab-evaluator
+    restart: unless-stopped
+    depends_on:
+      - minio
+    environment:
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+      MINIO_BUCKET: ${MINIO_BUCKET:-decision-opt-lab}
+      EVALUATION_TIMEOUT: ${EVALUATION_TIMEOUT:-60}
+      EVALUATION_MEMORY_LIMIT: ${EVALUATION_MEMORY_LIMIT:-512}
+    ports:
+      - "${EVALUATOR_PORT:-8000}:8000"
+    volumes:
+      - ./evaluator:/app
+      - /var/run/docker.sock:/var/run/docker.sock  # 访问宿主机 Docker
+    networks:
+      - lab-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================
+  # 前端服务 (Angular 构建产物)
+  # ============================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: do-lab-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      API_BASE_URL: ${API_BASE_URL:-/api/v1}
+      WS_BASE_URL: ${WS_BASE_URL:-ws://localhost/ws}
+    networks:
+      - lab-network
+
+  # ============================================
+  # Nginx 反向代理
+  # ============================================
+  nginx:
+    image: nginx:alpine
+    container_name: do-lab-nginx
+    restart: unless-stopped
+    depends_on:
+      - frontend
+      - backend
+      - evaluator
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+      - "${NGINX_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro  # SSL 证书目录
+    networks:
+      - lab-network
+
+  # ============================================
+  # 可选: 评测沙箱基础镜像（构建后使用）
+  # ============================================
+  # sandbox:
+  #   build:
+  #     context: ./evaluator
+  #     dockerfile: Dockerfile.sandbox
+  #   image: decision-opt-sandbox:latest
+  #   container_name: do-lab-sandbox
+  #   profiles: ["build"]
+  #   networks:
+  #     - lab-network
+
+# ============================================
+# 数据卷
+# ============================================
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+
+# ============================================
+# 网络
+# ============================================
+networks:
+  lab-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

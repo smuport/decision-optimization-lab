@@ -1,0 +1,49 @@
+{
+  "case_id": "case_04",
+  "title": "分配问题",
+  "subtitle": "从二分匹配建模到匈牙利算法",
+  "type": "EXACT_MODELING",
+  "difficulty": "MEDIUM",
+  "knowledge_points": [
+    "0-1 规划",
+    "分配问题",
+    "全单模性",
+    "匈牙利算法",
+    "PuLP 求解"
+  ],
+  "source": {
+    "readme": "../../../../非全日制决策优化课03/case_04/README.md",
+    "reference_solution": "../../../../非全日制决策优化课03/case_04/solve.py"
+  },
+  "datasets": [
+    {
+      "id": "small",
+      "label": "小规模",
+      "visibility": "PUBLIC",
+      "path": "../../../../非全日制决策优化课03/case_04/data_small.json"
+    },
+    {
+      "id": "medium",
+      "label": "中规模",
+      "visibility": "PUBLIC",
+      "path": "../../../../非全日制决策优化课03/case_04/data_medium.json"
+    },
+    {
+      "id": "large",
+      "label": "大规模",
+      "visibility": "PUBLIC",
+      "path": "../../../../非全日制决策优化课03/case_04/data_large.json"
+    }
+  ],
+  "template": "template.py",
+  "validator": "validator.py",
+  "rubric": "rubric.json",
+  "entrypoint": "solve",
+  "expected_output": {
+    "objective": "number",
+    "solution": "list of {worker, task}",
+    "metrics": {
+      "assignment_matrix": "optional 0/1 matrix"
+    }
+  }
+}

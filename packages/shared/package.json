@@ -1,0 +1,18 @@
+{
+  "name": "@decision-lab/shared",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "dev": "tsc -w -p tsconfig.json",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "echo \"shared tests will be added with DTO validation\"",
+    "lint": "echo \"shared lint script will be added later\""
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  }
+}
