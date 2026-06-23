@@ -3,16 +3,23 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "dev": "echo \"backend dev script will be added when NestJS is initialized\"",
-    "build": "echo \"backend build script will be added when NestJS is initialized\"",
+    "dev": "ts-node src/main.ts",
+    "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "echo \"backend tests will be added when NestJS is initialized\"",
-    "lint": "echo \"backend lint script will be added when NestJS is initialized\""
+    "test": "echo \"backend tests will be added after Day1 API shell is stable\"",
+    "lint": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@decision-lab/shared": "workspace:*"
+    "@decision-lab/shared": "workspace:*",
+    "@nestjs/common": "^11.1.27",
+    "@nestjs/core": "^11.1.27",
+    "@nestjs/platform-express": "^11.1.27",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
   },
   "devDependencies": {
-    "typescript": "^5.5.0"
+    "@types/node": "^24.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "~5.9.3"
   }
 }

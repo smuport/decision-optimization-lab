@@ -4,6 +4,7 @@
   "packageManager": "pnpm@9.0.0",
   "scripts": {
     "dev": "turbo dev",
+    "dev:app": "bash scripts/dev.sh",
     "build": "turbo build",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
@@ -11,6 +12,6 @@
   },
   "devDependencies": {
     "turbo": "^2.0.0",
-    "typescript": "^5.5.0"
+    "typescript": "~5.9.3"
   }
 }

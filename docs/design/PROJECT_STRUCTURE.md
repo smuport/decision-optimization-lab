@@ -14,9 +14,15 @@ decision-optimization-lab/
 ├── pnpm-workspace.yaml
 ├── turbo.json
 ├── tsconfig.base.json
+├── .codex/
+│   └── config.toml
+├── .npmrc
+├── .nvmrc
 ├── .gitignore
 ├── docker-compose.yml
 ├── setup.sh
+├── scripts/
+│   └── dev.sh
 │
 ├── docs/
 │   ├── README.md
@@ -46,12 +52,17 @@ decision-optimization-lab/
 │
 ├── frontend/
 │   ├── src/
+│   ├── angular.json
+│   ├── tsconfig.app.json
 │   ├── package.json
 │   └── tsconfig.json
 │
 ├── backend/
 │   ├── prisma/
 │   ├── src/
+│   │   ├── main.ts
+│   │   ├── app.module.ts
+│   │   └── health/
 │   ├── storage/
 │   │   ├── submissions/
 │   │   └── results/
@@ -95,9 +106,13 @@ decision-optimization-lab/
 | `docs/decisions` | ADR 架构决策记录 | 防止决策漂移 |
 | `docs/PROJECT_STATE.md` | 当前阶段、已完成、下一步、未决问题 | 项目外部记忆 |
 | `AGENTS.md` | AI/Codex 项目级实施指令 | 防偏离入口 |
+| `.codex/config.toml` | 项目级 Codex 权限意图：工作区权限、按需审批、有限网络/localhost | 沙箱问题处理 |
 | `frontend` | Angular 主前端 | Week2 初始化 |
 | `backend` | NestJS 主后端 | Week2 初始化 |
 | `packages/shared` | 前后台共享 DTO、枚举、schema、API 类型 | Week2 初始化 |
+| `.nvmrc` | 固定推荐 Node LTS 版本 | Day1 验收环境 |
+| `.npmrc` | 固定 npm/pnpm 国内镜像源 | 中国网络环境依赖安装 |
+| `scripts/dev.sh` | 一键启动 Angular 前端和 NestJS 后端 | 本地开发入口 |
 | `course-assets` | 标准化课程案例资产 | 已有，持续扩展 |
 | `runner` | Week1 本地评测 Runner | Week2 由 backend adapter 调用 |
 | `frontend-static` | Week1 静态门户 demo | legacy，仅保留参考 |

@@ -28,6 +28,34 @@
 - `docs/acceptance/VERSION_1_ACCEPTANCE.md`：第一周 1.0 验收记录
 - `docs/plans/WEEK2_BUILD_PLAN.md`：下周真实系统骨架建设计划
 
+## 快速启动
+
+首次进入项目后：
+
+```bash
+corepack enable
+pnpm install
+```
+
+同时启动前端和后端：
+
+```bash
+pnpm dev:app
+```
+
+默认地址：
+
+- 前端：`http://localhost:4200`
+- 后端健康检查：`http://localhost:3000/api/v1/health`
+
+如果本机已有服务占用端口：
+
+```bash
+FRONTEND_PORT=4201 BACKEND_PORT=3001 pnpm dev:app
+```
+
+Codex 沙箱内启动 dev server 或访问 localhost 可能需要按需审批；本地终端可直接执行上述命令。
+
 ## 一、项目概述
 
 本实验平台是《工程系统决策与优化》课程的配套在线实验系统，支持学生：
@@ -131,6 +159,8 @@ decision-optimization-lab/
 ├── pnpm-workspace.yaml                ← workspace 包范围
 ├── turbo.json                         ← Turborepo 任务编排
 ├── tsconfig.base.json                 ← 前后端共享 TypeScript 基础配置
+├── .npmrc                             ← npm/pnpm 国内镜像源配置
+├── .nvmrc                             ← 推荐 Node LTS 版本
 ├── .gitignore                         ← Git 忽略规则
 ├── docker-compose.yml                 ← Docker 编排配置
 ├── setup.sh                           ← 一键初始化脚本
@@ -178,14 +208,20 @@ decision-optimization-lab/
 │   ├── prisma/
 │   │   └── .gitkeep
 │   ├── src/
-│   │   └── .gitkeep
+│   │   ├── main.ts
+│   │   ├── app.module.ts
+│   │   └── health/
 │   ├── storage/                       ← MVP 本地提交与结果文件
 │   ├── package.json
 │   └── tsconfig.json
 │
 ├── frontend/                          ← Angular 前端项目
 │   ├── src/
-│   │   └── .gitkeep
+│   │   ├── index.html
+│   │   ├── main.ts
+│   │   └── styles.css
+│   ├── angular.json
+│   ├── tsconfig.app.json
 │   ├── package.json
 │   └── tsconfig.json
 │

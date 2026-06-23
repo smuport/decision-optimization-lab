@@ -13,6 +13,23 @@ export interface ApiError {
   timestamp: string;
 }
 
+export interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PaginatedResponse<T> {
+  code: number;
+  message: string;
+  data: {
+    list: T[];
+    pagination: PaginationMeta;
+  };
+  timestamp: string;
+}
+
 export type UserRole = 'STUDENT' | 'TEACHER' | 'ADMIN';
 
 export type DatasetVisibility = 'PUBLIC' | 'HIDDEN';

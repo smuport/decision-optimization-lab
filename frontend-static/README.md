@@ -1,6 +1,6 @@
-# Static Portal
+# Static Portal (Legacy Demo)
 
-Day 5 交付的静态课程门户。
+Day 5 交付的静态课程门户。自 Week2 起，主平台入口迁移到 `frontend/` Angular 应用；本目录仅作为 Week1 legacy demo 和课程资产展示参考保留，不再承载新的主平台功能。
 
 入口文件：
 

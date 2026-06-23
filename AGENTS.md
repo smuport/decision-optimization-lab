@@ -95,7 +95,34 @@ If tests or builds cannot be run, record why in the final response and, when rel
 
 ---
 
-## 6. Documentation Update Rule
+## 6. Codex Sandbox and Permission Policy
+
+Use the project-level Codex configuration in `.codex/config.toml` as the desired permission model:
+
+- Default to workspace-scoped file access.
+- Keep `approval_policy = "on-request"`.
+- Allow network only for the project needs documented there, such as npm mirror access, GitHub access, and localhost development verification.
+- Do not switch the project default to unrestricted local access such as `danger-full-access`.
+
+When a command fails because of sandbox, DNS, localhost binding, dependency download, or dev-server restrictions:
+
+1. Treat it as an environment/permission issue first if the same command is likely valid locally.
+2. Retry the same meaningful command with scoped approval instead of changing application code or tool versions prematurely.
+3. Explain the approval reason briefly and precisely.
+4. If a non-sandbox or user-local run succeeds, record that distinction in the final response and, when relevant, in `docs/PROJECT_STATE.md`.
+
+Typical commands that may need approval in this project:
+
+- `corepack pnpm install`
+- `pnpm --filter frontend build`
+- `pnpm --filter frontend dev`
+- `pnpm --filter backend dev`
+- `curl http://localhost:<port>/...`
+- GitHub remote operations such as push or repository management
+
+---
+
+## 7. Documentation Update Rule
 
 Any change that affects architecture, workflow, API contract, data model, directory structure, or phase scope must update the relevant document in the same task.
 
@@ -108,7 +135,7 @@ Examples:
 
 ---
 
-## 7. Commit Rule
+## 8. Commit Rule
 
 Do not create commits unless the user asks for it.
 
@@ -122,7 +149,7 @@ When asked to commit:
 
 ---
 
-## 8. Safety Rule
+## 9. Safety Rule
 
 Never use destructive Git or filesystem commands unless the user explicitly asks and confirms. This includes:
 
@@ -133,4 +160,3 @@ Never use destructive Git or filesystem commands unless the user explicitly asks
 - Rewriting history
 
 Work with existing files and user changes. If user changes conflict with the requested task, ask before proceeding.
-

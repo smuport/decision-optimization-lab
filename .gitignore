@@ -11,6 +11,9 @@ build/
 coverage/
 .turbo/
 .nx/
+.angular/
+frontend/.angular/
+*.tsbuildinfo
 
 # Environment
 .env
@@ -28,8 +31,15 @@ yarn-error.log*
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 .venv/
 venv/
+
+# Codex local runtime files
+.codex/cache/
+.codex/tmp/
+.codex/*.local.toml
 
 # Local runtime storage
 storage/submissions/*

@@ -189,7 +189,32 @@ When implementation changes design or scope, update documents immediately:
 
 ---
 
-## 9. Stop-and-Ask Conditions
+## 9. Codex Sandbox Guardrails
+
+The project uses `.codex/config.toml` to document the intended Codex permission posture:
+
+- Workspace-scoped file access by default.
+- `approval_policy = "on-request"`.
+- Network access limited to project needs such as `localhost`, GitHub, and npm mirror access.
+- No default `danger-full-access`.
+
+If a build, dependency install, dev server, or localhost request fails inside Codex but is expected to work locally:
+
+1. Do not change framework versions or source code solely to satisfy the sandbox.
+2. Re-run the same meaningful command with scoped approval when the command is important for verification.
+3. Prefer stable project baselines from the design docs, such as `.nvmrc` Node 22 LTS and `.npmrc` npmmirror, over ad hoc environment changes.
+4. Record the exact distinction between sandbox failure and non-sandbox/local success.
+
+Known examples:
+
+- Angular builder may abort or behave differently in a restricted sandbox.
+- NestJS/Angular dev servers may fail to bind ports inside a restricted sandbox.
+- `curl localhost` may need to run in the same non-sandbox network context as the dev server.
+- Dependency installation may fail without approved network access.
+
+---
+
+## 10. Stop-and-Ask Conditions
 
 Stop and ask the user before proceeding if:
 
@@ -199,4 +224,3 @@ Stop and ask the user before proceeding if:
 - A requested change would delete or overwrite legacy assets.
 - A requested change requires GitHub remote creation, push, force push, or visibility change.
 - Local files contain user changes that conflict with the current task.
-

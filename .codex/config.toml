@@ -1,0 +1,22 @@
+# Project-level Codex configuration intent.
+#
+# Keep this file conservative: the project should run with workspace-scoped file
+# access by default, and Codex should request approval before operations that
+# need broader local/network permissions.
+
+approval_policy = "on-request"
+default_permissions = "decision-lab-dev"
+
+[permissions.decision-lab-dev]
+extends = ":workspace"
+
+[permissions.decision-lab-dev.network]
+enabled = true
+allow_local_binding = true
+
+[permissions.decision-lab-dev.network.domains]
+"localhost" = "allow"
+"127.0.0.1" = "allow"
+"registry.npmmirror.com" = "allow"
+"github.com" = "allow"
+"api.github.com" = "allow"
