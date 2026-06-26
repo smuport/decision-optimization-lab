@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "turbo dev",
     "dev:app": "bash scripts/dev.sh",
+    "db:up": "docker compose up -d db",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f db",
     "build": "turbo build",
     "typecheck": "turbo typecheck",
     "test": "turbo test",

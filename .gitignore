@@ -8,6 +8,7 @@ node_modules/
 # Build outputs
 dist/
 build/
+out-tsc/
 coverage/
 .turbo/
 .nx/
@@ -40,6 +41,7 @@ venv/
 .codex/cache/
 .codex/tmp/
 .codex/*.local.toml
+.local/
 
 # Local runtime storage
 storage/submissions/*

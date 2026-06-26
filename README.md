@@ -37,6 +37,17 @@ corepack enable
 pnpm install
 ```
 
+启动本地 PostgreSQL 14 开发数据库：
+
+```bash
+pnpm db:up
+pnpm --filter backend prisma:generate
+pnpm --filter backend exec prisma db push --schema prisma/schema.prisma
+pnpm --filter backend prisma:seed
+```
+
+默认数据库端口为 `55432`，用于避开本机可能已有的 PostgreSQL `5432`。
+
 同时启动前端和后端：
 
 ```bash

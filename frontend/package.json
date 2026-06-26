@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "dev": "ng serve --host 0.0.0.0",
+    "dev": "ng serve --host 0.0.0.0 --port 4300 --proxy-config proxy.conf.json",
     "build": "ng build",
     "typecheck": "ng build --configuration development",
     "test": "echo \"frontend tests will be added after Day1 shell is stable\"",
@@ -13,6 +13,7 @@
     "@angular/common": "21.2.16",
     "@angular/compiler": "21.2.16",
     "@angular/core": "21.2.16",
+    "@angular/forms": "21.2.16",
     "@angular/platform-browser": "21.2.16",
     "@angular/router": "21.2.16",
     "@decision-lab/shared": "workspace:*",

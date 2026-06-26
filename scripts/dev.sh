@@ -4,8 +4,8 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-FRONTEND_PORT="${FRONTEND_PORT:-4200}"
-BACKEND_PORT="${BACKEND_PORT:-3000}"
+FRONTEND_PORT="${FRONTEND_PORT:-4300}"
+BACKEND_PORT="${BACKEND_PORT:-3002}"
 
 if [ -s "$HOME/.nvm/nvm.sh" ]; then
   # shellcheck source=/dev/null
@@ -30,7 +30,7 @@ echo "Starting Decision Optimization Lab"
 echo "Frontend: http://localhost:${FRONTEND_PORT}"
 echo "Backend:  http://localhost:${BACKEND_PORT}/api/v1/health"
 echo
-echo "Tip: override ports with FRONTEND_PORT=4201 BACKEND_PORT=3001 pnpm dev:app"
+echo "Tip: override ports with FRONTEND_PORT=4301 BACKEND_PORT=3003 pnpm dev:app"
 echo "Press Ctrl+C to stop both services."
 echo
 
@@ -67,7 +67,7 @@ trap cleanup EXIT
 PORT="$BACKEND_PORT" pnpm --filter backend dev &
 backend_pid="$!"
 
-pnpm --filter frontend exec ng serve --host 0.0.0.0 --port "$FRONTEND_PORT" &
+pnpm --filter frontend exec ng serve --host 0.0.0.0 --port "$FRONTEND_PORT" --proxy-config proxy.conf.json &
 frontend_pid="$!"
 
 while true; do

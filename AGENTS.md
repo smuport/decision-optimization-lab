@@ -144,7 +144,7 @@ When asked to commit:
 - Inspect changes first.
 - Do not include unrelated local changes.
 - Do not commit secrets, `.env`, caches, build output, or generated local runtime files.
-- Use Conventional Commits from `docs/guides/GIT_WORKFLOW.md`.
+- Use Conventional Commits from `docs/guides/GIT_WORKFLOW.md`; keep `type`/`scope` in English and write the subject in Chinese.
 - Prefer small commits grouped by purpose.
 
 ---
