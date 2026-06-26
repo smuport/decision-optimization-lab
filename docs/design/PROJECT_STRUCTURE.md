@@ -14,6 +14,7 @@ decision-optimization-lab/
 ├── pnpm-workspace.yaml
 ├── turbo.json
 ├── tsconfig.base.json
+├── .env.example
 ├── .codex/
 │   └── config.toml
 ├── .npmrc
@@ -44,6 +45,10 @@ decision-optimization-lab/
 │   │   ├── DEPLOYMENT_GUIDE.md
 │   │   ├── GIT_WORKFLOW.md
 │   │   └── IMPLEMENTATION_GUARDRAILS.md
+│   ├── references/
+│   │   └── angular/
+│   │       ├── README.md
+│   │       └── llms.txt
 │   └── decisions/
 │       ├── ADR-0001-mvp-architecture.md
 │       ├── ADR-0002-monorepo-strategy.md
@@ -52,17 +57,45 @@ decision-optimization-lab/
 │
 ├── frontend/
 │   ├── src/
+│   │   ├── main.ts
+│   │   ├── styles.css
+│   │   └── app/
+│   │       ├── app.component.ts
+│   │       ├── app.routes.ts
+│   │       ├── core/
+│   │       │   ├── api-client.service.ts
+│   │       │   └── auth-state.service.ts
+│   │       └── features/
+│   │           ├── login/
+│   │           ├── course-home/
+│   │           ├── cases/
+│   │           └── workspace-placeholder/
 │   ├── angular.json
+│   ├── proxy.conf.json
 │   ├── tsconfig.app.json
 │   ├── package.json
 │   └── tsconfig.json
 │
 ├── backend/
+│   ├── prisma.config.ts
 │   ├── prisma/
+│   │   ├── schema.prisma
+│   │   ├── seed.ts
+│   │   └── migrations/
 │   ├── src/
 │   │   ├── main.ts
 │   │   ├── app.module.ts
-│   │   └── health/
+│   │   ├── auth/
+│   │   ├── common/
+│   │   ├── courses/
+│   │   ├── enrollments/
+│   │   ├── exercises/
+│   │   ├── health/
+│   │   ├── prisma/
+│   │   ├── reports/
+│   │   ├── runner-adapter/
+│   │   ├── submissions/
+│   │   └── teacher/
 │   ├── storage/
 │   │   ├── submissions/
 │   │   └── results/
@@ -78,6 +111,12 @@ decision-optimization-lab/
 │
 ├── course-assets/
 │   ├── cases/
+│   │   └── case_01/
+│   │       ├── datasets/
+│   │       ├── template.py
+│   │       ├── validator.py
+│   │       ├── rubric.json
+│   │       └── case_manifest.json
 │   └── manifests/
 │
 ├── runner/
@@ -103,17 +142,30 @@ decision-optimization-lab/
 | `docs/plans` | 总体计划、Week1 计划、Week2 计划 | 工作计划 |
 | `docs/acceptance` | 阶段验收记录 | 验收归档 |
 | `docs/guides` | 部署、操作、运维指南 | 后续完善 |
+| `docs/references` | 外部官方参考资料归档，例如 Angular 官方 LLM 文档索引 | Day4 前端参考 |
 | `docs/decisions` | ADR 架构决策记录 | 防止决策漂移 |
 | `docs/PROJECT_STATE.md` | 当前阶段、已完成、下一步、未决问题 | 项目外部记忆 |
 | `AGENTS.md` | AI/Codex 项目级实施指令 | 防偏离入口 |
 | `.codex/config.toml` | 项目级 Codex 权限意图：工作区权限、按需审批、有限网络/localhost | 沙箱问题处理 |
-| `frontend` | Angular 主前端 | Week2 初始化 |
+| `.env.example` | 本地开发数据库连接示例，默认 PostgreSQL 映射到 `55432` | Day2 数据库配置 |
+| `docker-compose.yml` | Week2 本地 PostgreSQL 14 开发数据库，不包含 Redis/MinIO/evaluator | Day2 数据库配置 |
+| `frontend` | Angular 主前端；已包含 app shell、登录、课程首页、case01 详情页、API client 和 auth state | Week2 Day5 进行中 |
 | `backend` | NestJS 主后端 | Week2 初始化 |
+| `backend/prisma` | Prisma schema、migration 和 seed | Week2 Day2 初始化 |
+| `backend/src/prisma` | 后端唯一 Prisma Client 访问层，前端禁止直接使用 Prisma Client | Week2 Day3 初始化 |
+| `backend/src/runner-adapter` | Week2 同步调用 `runner/evaluate.py` 的本地评测适配层 | Week2 Day3 初始化 |
+| `backend/src/auth` | MVP demo 登录和当前用户接口 | Week2 Day3 初始化 |
+| `backend/src/courses` | 当前课程、学期、班级和任务读取接口 | Week2 Day3 初始化 |
+| `backend/src/enrollments` | 教师端学生名单导入接口 | Week2 Day3 初始化 |
+| `backend/src/exercises` | 实验列表、详情、数据集、模板读取接口 | Week2 Day3 初始化 |
+| `backend/src/submissions` | 提交创建、状态、结果查询接口 | Week2 Day3 初始化 |
+| `backend/src/reports` | 实验报告入口预留接口，不实现完整报告流程 | Week2 Day3 初始化 |
+| `backend/src/teacher` | 教师端进度、提交列表、人工评分入口预留接口 | Week2 Day3 初始化 |
 | `packages/shared` | 前后台共享 DTO、枚举、schema、API 类型 | Week2 初始化 |
 | `.nvmrc` | 固定推荐 Node LTS 版本 | Day1 验收环境 |
 | `.npmrc` | 固定 npm/pnpm 国内镜像源 | 中国网络环境依赖安装 |
 | `scripts/dev.sh` | 一键启动 Angular 前端和 NestJS 后端 | 本地开发入口 |
-| `course-assets` | 标准化课程案例资产 | 已有，持续扩展 |
+| `course-assets` | 标准化课程案例资产；公开数据集放在 `course-assets/cases/<caseId>/datasets/`，用于资源包下载和本地评测读取 | 已有，持续扩展 |
 | `runner` | Week1 本地评测 Runner | Week2 由 backend adapter 调用 |
 | `frontend-static` | Week1 静态门户 demo | legacy，仅保留参考 |
 | `submission-service` | Week1 过渡提交服务 | legacy，后续并入 backend |
@@ -227,3 +279,23 @@ packages/shared/
 - `backend` 中的 Redis/BullMQ、MinIO、WebSocket、排行榜、审计日志模块。
 
 后置能力不应进入 Week2 主线，除非计划文档更新并明确调整范围。
+
+---
+
+## 6. 本地 Node 版本说明
+
+- `.nvmrc` 保留 Node 22 LTS 作为推荐环境和后续 CI 基线。
+- 当前本机默认 `node v23.5.0` 已验证可运行 backend/shared 构建，并可在非沙箱环境完成 Angular build。
+- 如果 Codex 沙箱内 `pnpm --filter frontend build` 出现 `SIGABRT`，优先按沙箱/进程权限问题处理，不要直接判定为 Node 版本不兼容。
+
+---
+
+## 7. 本地开发端口
+
+为避免与用户本地已有服务冲突，当前 Week2 开发端口约定为：
+
+- Backend NestJS: `PORT=3002 pnpm --filter backend dev`
+- Frontend Angular: `pnpm --filter frontend dev`，脚本固定使用 `--port 4300`
+- Frontend dev proxy: `frontend/proxy.conf.json` 将 `/api` 转发到 `http://localhost:3002`
+
+如果后续端口再次冲突，应优先调整本项目端口和 proxy 配置，不要误判为 Angular 或 NestJS 代码问题。

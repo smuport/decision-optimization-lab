@@ -204,6 +204,23 @@ manual_grades
 
 `leaderboards`、`audit_logs`、`system_configs` 可以后置。审计日志在正式部署前补上即可，排行榜不应成为第一阶段目标。
 
+### 0.5 Week2 Day2 实施约定
+
+当前项目使用 Prisma 7.8.0：
+
+- Prisma schema 文件为 `backend/prisma/schema.prisma`。
+- Prisma CLI 配置文件为 `backend/prisma.config.ts`。
+- Prisma Client 在后端通过 `@prisma/adapter-pg` 连接 PostgreSQL。
+- 前端不得导入 `@prisma/client` 或 Prisma 生成类型。
+
+本地开发数据库使用 Docker Compose 启动 `postgres:14-alpine`。宿主机端口使用 `55432`，避免与本机已有 PostgreSQL `5432` 串台：
+
+```text
+postgresql://decision_lab:decision_lab_dev@127.0.0.1:55432/decision_lab?schema=public
+```
+
+如果本机已经设置了其他项目的 `DATABASE_URL`，应优先使用项目专用的 `DECISION_LAB_DATABASE_URL`，避免 Prisma 命中错误数据库。
+
 ## 一、ER 图（实体关系概览）
 
 ```

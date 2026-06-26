@@ -54,6 +54,7 @@ GET  /api/v1/exercises
 GET  /api/v1/exercises/:id
 GET  /api/v1/exercises/:id/datasets
 GET  /api/v1/exercises/:id/template
+GET  /api/v1/exercises/:id/resources/download
 
 POST /api/v1/assignments/:id/submissions
 GET  /api/v1/submissions/:id
@@ -82,6 +83,33 @@ PATCH /api/v1/teacher/submissions/:id/manual-grade
   }
 }
 ```
+
+### 0.5 Week2 Day3 实现状态
+
+当前后端已按 MVP 范围实现上述核心接口，但有以下阶段性约束：
+
+| 能力 | 当前实现 | 后续方向 |
+|------|----------|----------|
+| Auth | demo 登录和 `GET /auth/me`，返回演示 token | 引入真实 JWT、密码哈希、角色鉴权和激活流程 |
+| Prisma | `backend/src/prisma` 作为唯一 Prisma Client 访问层 | 继续保持 Prisma Client 后端专用，前端只消费 API/DTO |
+| Submission | 创建提交后同步调用本地 `runner/evaluate.py` 并写入 `Submission`/`RunResult` | 后续改为队列、异步任务、隔离沙箱和可取消/重跑 |
+| Report | `POST /submissions/:id/report` 只创建/更新 DRAFT 占位入口 | 后续实现完整报告上传、查看、批注流程 |
+| ManualGrade | `PATCH /teacher/submissions/:id/manual-grade` 只提供教师端评分入口占位 | 后续实现正式人工评分规则、权限和成绩汇总 |
+| Teacher Dashboard | 已提供班级进度和提交列表基础读取 | 后续增加统计图、常见错误、排行榜和导出 |
+
+Week2 仍不引入 Redis、BullMQ、MinIO、独立 FastAPI evaluator、Docker 沙箱、WebSocket、排行榜、Monaco 编辑器或完整报告/评分工作流。
+
+### 0.6 Week2 资源包下载
+
+`GET /api/v1/exercises/:id/datasets` 和 `GET /api/v1/exercises/:id/template` 保持 JSON 读取语义，供前端预览、工作区默认代码和数据集选择使用。
+
+学生下载使用独立资源包接口：
+
+```text
+GET /api/v1/exercises/:id/resources/download
+```
+
+响应为 zip 文件，包含该实验的默认提交模板、公开数据集和资源包说明 `README.md`。MVP 阶段由后端从本地 `course-assets` 动态打包，后续如迁移对象存储，可改为重定向或签名 URL。
 
 ## 一、API 设计规范
 

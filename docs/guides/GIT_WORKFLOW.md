@@ -42,23 +42,23 @@ main
 
 ## 3. Commit Message 格式
 
-采用 Conventional Commits 风格：
+采用 Conventional Commits 风格，但提交说明必须使用中文描述：
 
 ```text
 <type>(<scope>): <subject>
 ```
 
-`scope` 可选，但推荐使用。
+`type` 和 `scope` 使用英文关键字以兼容工具生态；`subject` 必须使用中文，说明本次提交做了什么。`scope` 可选，但推荐使用。
 
 示例：
 
 ```text
-docs(plans): add week2 daily implementation plan
-chore(repo): initialize pnpm workspace and turbo config
-feat(shared): add submission result dto
-feat(backend): add prisma schema for course entities
-feat(frontend): add case01 workspace page
-fix(runner): normalize invalid output messages
+docs(plans): 新增 Week2 每日实施计划
+chore(repo): 初始化 pnpm workspace 和 turbo 配置
+feat(shared): 新增提交结果 DTO
+feat(backend): 新增课程实体 Prisma schema
+feat(frontend): 新增 case01 工作台页面
+fix(runner): 规范无效输出的错误提示
 ```
 
 ---
@@ -108,17 +108,17 @@ fix(runner): normalize invalid output messages
 推荐把 Week2 拆成这些提交：
 
 ```text
-docs(design): reorganize documentation structure
-chore(repo): initialize pnpm workspace and turbo
-feat(shared): add core api response and result models
-feat(prisma): add mvp database schema and seed data
-feat(backend): add course and exercise api modules
-feat(backend): add assignment submission api
-feat(frontend): add course home and login shell
-feat(frontend): add case01 detail page
-feat(frontend): add workspace submission flow
-feat(teacher): add minimal progress dashboard
-docs(acceptance): add version 1.1 acceptance checklist
+docs(design): 整理设计文档结构
+chore(repo): 初始化 pnpm workspace 和 turbo
+feat(shared): 新增核心 API 响应和结果模型
+feat(prisma): 新增 MVP 数据库 schema 和种子数据
+feat(backend): 新增课程和实验 API 模块
+feat(backend): 新增作业提交接口
+feat(frontend): 新增课程首页和登录骨架
+feat(frontend): 新增 case01 详情页
+feat(frontend): 新增工作台提交流程
+feat(teacher): 新增教师端最小进度面板
+docs(acceptance): 新增 1.1 版本验收清单
 ```
 
 避免这种提交：
