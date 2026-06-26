@@ -20,19 +20,19 @@
       "id": "small",
       "label": "小规模",
       "visibility": "PUBLIC",
-      "path": "../../../../非全日制决策优化课03/case_01/data_small.json"
+      "path": "datasets/data_small.json"
     },
     {
       "id": "medium",
       "label": "中规模",
       "visibility": "PUBLIC",
-      "path": "../../../../非全日制决策优化课03/case_01/data_medium.json"
+      "path": "datasets/data_medium.json"
     },
     {
       "id": "large",
       "label": "大规模",
       "visibility": "PUBLIC",
-      "path": "../../../../非全日制决策优化课03/case_01/data_large.json"
+      "path": "datasets/data_large.json"
     }
   ],
   "template": "template.py",
