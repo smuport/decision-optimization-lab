@@ -1,0 +1,343 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  STUDENT
+  TA
+  TEACHER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum CaseCategory {
+  LINEAR_PROGRAMMING
+  INTEGER_PROGRAMMING
+  HEURISTIC
+  META_HEURISTIC
+  REPORT_ANALYSIS
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum CaseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ExerciseKind {
+  EXACT_MODELING
+  HEURISTIC
+  REPORT
+  MIXED
+}
+
+enum DatasetVisibility {
+  PUBLIC
+  HIDDEN
+}
+
+enum SubmissionStatus {
+  QUEUED
+  RUNNING
+  SUCCESS
+  FAILED
+  RUNTIME_ERROR
+  INVALID_OUTPUT
+}
+
+enum ReportStatus {
+  DRAFT
+  SUBMITTED
+}
+
+model User {
+  id             String        @id @default(uuid())
+  email          String        @unique
+  studentNo      String?       @unique @map("student_no")
+  name           String
+  role           UserRole      @default(STUDENT)
+  status         UserStatus    @default(ACTIVE)
+  passwordHash   String?       @map("password_hash")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  taughtSections ClassSection[] @relation("SectionTeacher")
+  enrollments    Enrollment[]
+  submissions    Submission[]
+  scores         Score[]
+  reports        Report[]
+  manualGrades   ManualGrade[] @relation("ManualGradeGrader")
+
+  @@map("users")
+}
+
+model Course {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  terms       Term[]
+  cases       Case[]
+
+  @@map("courses")
+}
+
+model Term {
+  id        String         @id @default(uuid())
+  courseId  String         @map("course_id")
+  name      String
+  startsAt  DateTime?      @map("starts_at")
+  endsAt    DateTime?      @map("ends_at")
+  course    Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  sections  ClassSection[]
+
+  @@index([courseId])
+  @@map("terms")
+}
+
+model ClassSection {
+  id          String       @id @default(uuid())
+  termId      String       @map("term_id")
+  name        String
+  teacherId   String?      @map("teacher_id")
+  term        Term         @relation(fields: [termId], references: [id], onDelete: Cascade)
+  teacher     User?        @relation("SectionTeacher", fields: [teacherId], references: [id])
+  enrollments Enrollment[]
+  assignments Assignment[]
+  scores      Score[]
+
+  @@index([termId])
+  @@index([teacherId])
+  @@map("class_sections")
+}
+
+model Enrollment {
+  id        String           @id @default(uuid())
+  sectionId String           @map("section_id")
+  userId    String           @map("user_id")
+  status    EnrollmentStatus @default(ACTIVE)
+  section   ClassSection     @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sectionId, userId])
+  @@index([userId])
+  @@map("enrollments")
+}
+
+model Case {
+  id              String       @id @default(uuid())
+  courseId        String       @map("course_id")
+  code            String       @unique
+  title           String
+  subtitle        String?
+  category        CaseCategory @default(LINEAR_PROGRAMMING)
+  difficulty      Difficulty   @default(EASY)
+  status          CaseStatus   @default(PUBLISHED)
+  knowledgePoints Json         @default("[]") @map("knowledge_points")
+  summary         String?
+  content         Json?
+  sortOrder       Int          @default(0) @map("sort_order")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+  course          Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  exercises       Exercise[]
+
+  @@index([courseId])
+  @@map("cases")
+}
+
+model Exercise {
+  id           String       @id @default(uuid())
+  caseId       String       @map("case_id")
+  title        String
+  kind         ExerciseKind
+  entrypoint   String?
+  outputSchema Json?        @map("output_schema")
+  guide        Json?
+  sortOrder    Int          @default(0) @map("sort_order")
+  case         Case         @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  datasets     Dataset[]
+  templates    Template[]
+  rubrics      Rubric[]
+  assignments  Assignment[]
+
+  @@index([caseId])
+  @@map("exercises")
+}
+
+model Dataset {
+  id         String            @id @default(uuid())
+  exerciseId String            @map("exercise_id")
+  key        String
+  label      String
+  visibility DatasetVisibility @default(PUBLIC)
+  path       String?
+  content    Json?
+  sortOrder  Int               @default(0) @map("sort_order")
+  exercise   Exercise          @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@unique([exerciseId, key])
+  @@index([exerciseId])
+  @@map("datasets")
+}
+
+model Template {
+  id         String   @id @default(uuid())
+  exerciseId String   @map("exercise_id")
+  language   String   @default("python")
+  filename   String
+  content    String
+  path       String?
+  isDefault  Boolean  @default(true) @map("is_default")
+  exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@index([exerciseId])
+  @@map("templates")
+}
+
+model Rubric {
+  id         String   @id @default(uuid())
+  exerciseId String   @map("exercise_id")
+  version    Int
+  totalScore Float    @default(100) @map("total_score")
+  rules      Json
+  isActive   Boolean  @default(true) @map("is_active")
+  exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@unique([exerciseId, version])
+  @@map("rubrics")
+}
+
+model Assignment {
+  id          String       @id @default(uuid())
+  sectionId   String       @map("section_id")
+  exerciseId  String       @map("exercise_id")
+  title       String
+  opensAt     DateTime?    @map("opens_at")
+  dueAt       DateTime?    @map("due_at")
+  maxAttempts Int?         @map("max_attempts")
+  allowLate   Boolean      @default(false) @map("allow_late")
+  section     ClassSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  exercise    Exercise     @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  submissions Submission[]
+  scores      Score[]
+
+  @@unique([sectionId, exerciseId])
+  @@index([exerciseId])
+  @@map("assignments")
+}
+
+model Submission {
+  id            String           @id @default(uuid())
+  assignmentId  String           @map("assignment_id")
+  userId        String           @map("user_id")
+  status        SubmissionStatus @default(QUEUED)
+  attemptNumber Int              @default(1) @map("attempt_number")
+  isLate        Boolean          @default(false) @map("is_late")
+  codePath      String?          @map("code_path")
+  codeText      String?          @map("code_text")
+  submittedAt   DateTime         @default(now()) @map("submitted_at")
+  completedAt   DateTime?        @map("completed_at")
+  errorMessage  String?          @map("error_message")
+  assignment    Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  runResult     RunResult?
+  report        Report?
+  manualGrades  ManualGrade[]
+  bestForScores Score[]          @relation("BestSubmission")
+
+  @@index([assignmentId])
+  @@index([userId])
+  @@index([status])
+  @@map("submissions")
+}
+
+model RunResult {
+  id               String           @id @default(uuid())
+  submissionId     String           @unique @map("submission_id")
+  status           SubmissionStatus
+  isFeasible       Boolean          @default(false) @map("is_feasible")
+  objective        Float?
+  optimalObjective Float?           @map("optimal_objective")
+  gap              Float?
+  score            Float?
+  runtimeMs        Int?             @map("runtime_ms")
+  metrics          Json             @default("{}")
+  messages         Json             @default("[]")
+  artifacts        Json             @default("{}")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  submission       Submission       @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@map("run_results")
+}
+
+model Score {
+  id               String            @id @default(uuid())
+  assignmentId     String            @map("assignment_id")
+  userId           String            @map("user_id")
+  sectionId        String            @map("section_id")
+  bestSubmissionId String?           @map("best_submission_id")
+  score            Float             @default(0)
+  status           SubmissionStatus?
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  assignment       Assignment        @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  section          ClassSection      @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  bestSubmission   Submission?       @relation("BestSubmission", fields: [bestSubmissionId], references: [id])
+
+  @@unique([assignmentId, userId])
+  @@index([sectionId])
+  @@map("scores")
+}
+
+model Report {
+  id           String       @id @default(uuid())
+  submissionId String       @unique @map("submission_id")
+  authorId     String       @map("author_id")
+  status       ReportStatus @default(DRAFT)
+  content      String?
+  attachments  Json         @default("[]")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+  submission   Submission   @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  author       User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([authorId])
+  @@map("reports")
+}
+
+model ManualGrade {
+  id           String     @id @default(uuid())
+  submissionId String     @map("submission_id")
+  graderId     String     @map("grader_id")
+  scoreDelta   Float      @default(0) @map("score_delta")
+  comment      String?
+  createdAt    DateTime   @default(now()) @map("created_at")
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  grader       User       @relation("ManualGradeGrader", fields: [graderId], references: [id], onDelete: Cascade)
+
+  @@index([submissionId])
+  @@index([graderId])
+  @@map("manual_grades")
+}
