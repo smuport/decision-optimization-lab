@@ -111,6 +111,198 @@ GET /api/v1/exercises/:id/resources/download
 
 响应为 zip 文件，包含该实验的默认提交模板、公开数据集和资源包说明 `README.md`。MVP 阶段由后端从本地 `course-assets` 动态打包，后续如迁移对象存储，可改为重定向或签名 URL。
 
+### 0.7 Week2 Day6/Day7 响应字段补充
+
+为支持剩余两天的 MVP 页面，保持现有路由不变，只补充响应字段：
+
+- `GET /api/v1/submissions/:id` 返回 `codeText?: string`，用于提交详情页只读回显。
+- `GET /api/v1/teacher/sections/:id/progress` 返回 `averageScore: number`，用于教师面板展示班级平均分。
+- teacher progress 的 assignment 摘要返回 assignment-level `averageScore`，用于展示每个作业的平均得分。
+
+Week2 的平均分以已有 `RunResult.score` 的提交为样本计算，未产生评测结果的提交不按 0 分计入；没有已评分提交时返回 `0`。该口径反映当前同步评测记录，不等同于后续正式成绩册中的学生最佳成绩平均值。
+
+这些补充不引入新的提交路由、队列、WebSocket 或完整评分工作流。
+
+### 0.8 Week3 管理控制面 API
+
+Week3 API 使用当前认证用户决定数据范围。ADMIN 维护课程级 Case/Exercise；TEACHER 维护自己负责教学班的案例发布和 Assignment；STUDENT 只读取所属教学班发布的内容。
+
+#### ADMIN 案例管理
+
+```text
+GET    /api/v1/admin/cases
+POST   /api/v1/admin/cases
+GET    /api/v1/admin/cases/:id
+PATCH  /api/v1/admin/cases/:id
+PATCH  /api/v1/admin/cases/:id/status
+```
+
+创建和更新字段包括 `courseId`、`code`、`title`、`subtitle`、`category`、`difficulty`、`knowledgePoints`、`summary` 和 `sortOrder`。状态只能在 `DRAFT | PUBLISHED | ARCHIVED` 中流转；已有发布或历史作业的 Case 不提供物理删除接口。
+
+#### ADMIN 练习管理
+
+```text
+GET    /api/v1/admin/cases/:caseId/exercises
+POST   /api/v1/admin/cases/:caseId/exercises
+GET    /api/v1/admin/exercises/:id
+PATCH  /api/v1/admin/exercises/:id
+PATCH  /api/v1/admin/exercises/:id/status
+GET    /api/v1/admin/exercises/:id/resource-check
+```
+
+Exercise 管理字段包括 `code`、`title`、`description`、`kind`、`entrypoint`、`outputSchema`、`guide`、`assetPath` 和 `sortOrder`。Week3 不通过 API 编辑模板、数据文件、rubric 或 validator，只读取仓库资源并执行完整性检查。
+
+资源完整性响应：
+
+```json
+{
+  "exerciseId": "exercise-case01-production-planning",
+  "ready": true,
+  "checks": {
+    "entrypoint": true,
+    "outputSchema": true,
+    "defaultTemplate": true,
+    "publicDataset": true,
+    "activeRubric": true,
+    "validator": true
+  },
+  "messages": []
+}
+```
+
+只有 `ready=true` 的 Exercise 可以从 DRAFT 变为 PUBLISHED。
+
+#### TEACHER 教学班案例发布
+
+```text
+GET    /api/v1/teacher/sections/:sectionId/case-releases
+POST   /api/v1/teacher/sections/:sectionId/case-releases
+PATCH  /api/v1/teacher/case-releases/:id
+PATCH  /api/v1/teacher/case-releases/:id/status
+```
+
+请求字段为 `caseId`、`visibleFrom?`、`visibleUntil?` 和 `sortOrder`。后端必须校验当前教师负责该教学班、Case 为 PUBLISHED、时间窗口合法且 `(sectionId, caseId)` 不重复。
+
+#### TEACHER 作业管理
+
+```text
+GET    /api/v1/teacher/sections/:sectionId/assignments
+POST   /api/v1/teacher/sections/:sectionId/assignments
+GET    /api/v1/teacher/assignments/:id
+PATCH  /api/v1/teacher/assignments/:id
+POST   /api/v1/teacher/assignments/:id/publish
+POST   /api/v1/teacher/assignments/:id/close
+POST   /api/v1/teacher/assignments/:id/archive
+```
+
+Assignment 创建和编辑字段包括 `exerciseId`、`title`、`description`、`opensAt?`、`dueAt?`、`maxAttempts?` 和 `allowLate`。发布操作必须原子校验：
+
+1. 当前教师负责该教学班。
+2. Exercise 为 PUBLISHED。
+3. Exercise 所属 Case 已通过 PUBLISHED SectionCaseRelease 发布给该教学班。
+4. Exercise 资源完整性检查通过。
+5. `opensAt <= dueAt`，且提交次数为正数或空值。
+
+Assignment 持久化状态为 `DRAFT | PUBLISHED | CLOSED | ARCHIVED`；响应同时返回计算状态 `UPCOMING | OPEN | LATE | CLOSED`。
+
+#### STUDENT 当前用户接口
+
+```text
+GET /api/v1/me/cases
+GET /api/v1/me/cases/:caseId
+GET /api/v1/me/assignments
+GET /api/v1/me/assignments/:assignmentId
+```
+
+`/me/cases` 只返回当前学生 ACTIVE Enrollment 所属教学班中，位于可见时间窗口的 PUBLISHED SectionCaseRelease。Case 详情只返回本班已发布 Assignment 对应的 Exercise 摘要，不暴露未发布练习。
+
+`/me/assignments` 返回 Assignment 持久化状态、计算状态、Case/Exercise 摘要、截止时间、提交次数和剩余次数。
+
+#### Exercise 资源与提交
+
+```text
+GET  /api/v1/exercises/:exerciseId/resources/download
+POST /api/v1/assignments/:assignmentId/submissions
+```
+
+- 资源包归属 Exercise，由默认模板、公开数据集、练习 README 和公开 output schema 动态生成。
+- STUDENT 只有在所属教学班存在该 Exercise 的可见 Assignment 时才能下载。
+- TEACHER 只能预览自己负责课程/教学班可管理的 Exercise；ADMIN 可以直接预览。
+- 提交必须从 Assignment 进入，后端校验班级归属、计算状态、迟交规则和剩余次数。
+
+#### Week3 权限矩阵
+
+| 能力 | ADMIN | TEACHER | STUDENT |
+|------|:-----:|:-------:|:-------:|
+| 管理 Case/Exercise | ✓ |  |  |
+| 预览 Exercise 资源 | ✓ | 自己管理范围 | 本班已发布作业 |
+| 发布 Case 到教学班 |  | 自己负责班级 |  |
+| 管理 Assignment |  | 自己负责班级 |  |
+| 查看班级已发布 Case | ✓ | 自己负责班级 | 自己所属班级 |
+| 提交 Assignment |  |  | 自己所属班级 |
+
+#### Week3 业务错误码
+
+| code | 含义 |
+|------|------|
+| `CASE_NOT_RELEASED_TO_SECTION` | Case 未发布给该教学班 |
+| `CASE_RELEASE_NOT_VISIBLE` | 案例发布尚未开始、已结束或已归档 |
+| `EXERCISE_NOT_PUBLISHED` | Exercise 不是 PUBLISHED |
+| `EXERCISE_RESOURCES_INCOMPLETE` | 练习资源完整性检查失败 |
+| `ASSIGNMENT_NOT_OPEN` | Assignment 尚未开放 |
+| `ASSIGNMENT_CLOSED` | Assignment 已关闭或归档 |
+| `ASSIGNMENT_ATTEMPT_LIMIT_REACHED` | 已达到最大提交次数 |
+| `SECTION_ACCESS_DENIED` | 当前用户不属于或无权管理该教学班 |
+
+#### Week3 shared DTO
+
+`packages/shared` 使用以下契约名称，前后端不得另行定义重复 response interface：
+
+| DTO | 用途 |
+|-----|------|
+| `AdminCaseListItemDto` / `AdminCaseDetailDto` | ADMIN Case 列表与详情 |
+| `CreateCaseRequest` / `UpdateCaseRequest` / `UpdateCaseStatusRequest` | Case 管理请求 |
+| `AdminExerciseListItemDto` / `AdminExerciseDetailDto` | ADMIN Exercise 列表与详情 |
+| `CreateExerciseRequest` / `UpdateExerciseRequest` / `UpdateExerciseStatusRequest` | Exercise 管理请求 |
+| `ExerciseResourceCheckDto` | 六项资源检查、ready 和 messages |
+| `SectionCaseReleaseDto` | 教学班 Case 发布状态、时间和排序 |
+| `CreateCaseReleaseRequest` / `UpdateCaseReleaseRequest` | CaseRelease 管理请求 |
+| `TeacherAssignmentDto` | 教师 Assignment 详情、持久化状态和计算状态 |
+| `CreateAssignmentRequest` / `UpdateAssignmentRequest` | Assignment 管理请求 |
+| `StudentCaseListItemDto` / `StudentCaseDetailDto` | 当前学生可见 Case |
+| `StudentAssignmentListItemDto` / `StudentAssignmentDetailDto` | 当前学生可见 Assignment、次数和状态 |
+
+所有创建/更新请求同时提供运行时校验 schema；日期使用 ISO 8601 字符串，枚举直接复用 shared 定义。
+
+Prisma model 只在 repository/service 内部流转。每个模块通过显式 mapper 将数据库字段、JSON 值、日期和计算状态转换为上述 shared DTO；Controller 只能返回 DTO 或 `ApiResponse<DTO>`，不得直接返回 Prisma model，也不得将 Prisma 类型导出到 shared 或 frontend。
+
+### 0.9 被 Week3 替代的旧 API 口径
+
+以下旧设计仅作历史参考，不再作为实现依据：
+
+- Case 级数据集和模板下载；资源统一归属 Exercise。
+- `POST /api/v1/submissions`；提交统一使用 Assignment-centric 路由。
+- 学生直接读取全量 `GET /api/v1/exercises`；学生使用 `/me/cases` 和 `/me/assignments`。
+- MinIO 签名 URL、队列位置和 WebSocket 字段；Week3 继续使用本地资源和同步 runner。
+
+本文后续“案例模块”和“提交模块”中的旧通用 OJ 示例若与 0.8 冲突，均以 0.8 为准。
+
+### 0.10 Week3 Day2 认证与权限实施状态
+
+2026-06-29 已将 Week2 demo token 替换为真实 JWT：
+
+- `POST /api/v1/auth/login` 必须提供学号或邮箱及密码；密码使用 bcrypt hash 校验，并拒绝 INACTIVE/SUSPENDED 账号。
+- access token 有效期为 1 小时，只包含 `sub`、`role`、`type=access`；服务端每次请求回查用户状态和当前角色，不信任客户端 section 信息。
+- `GET /api/v1/auth/me` 返回 JWT 对应当前用户，不再回退到固定 demo student。
+- `JwtAuthGuard` 和 `RolesGuard` 作为全局 guard；只有登录和 health 显式 `@Public()`。
+- 全局 RolesGuard 对路径提供默认策略：`/admin/**` 使用 ADMIN、`/teacher/**` 使用 TEACHER、`/me/**` 使用 STUDENT；提交创建、资源和报告等混合路径再使用显式 `@Roles()`。
+- `SectionAccessService` 统一校验 ACTIVE Enrollment、`ClassSection.teacherId`、Assignment、Submission 和 Exercise 资源归属。
+- Submission 创建固定使用 `@CurrentUser()` 的 student id，shared strict schema 拒绝请求体 `userId`；人工评分固定使用当前 teacher id，拒绝 `graderId`。
+- 课程、教学班、Exercise、资源包和提交详情响应均按当前用户范围过滤或返回 403。
+- 错误响应统一使用 `ApiError`；未登录/无效 token 为 `2001/401`，过期 token 为 `2003/401`，角色或教学班越权为 `2002/403`，教学班越权的 `details` 为 `SECTION_ACCESS_DENIED`。
+
+本地开发通过 `DECISION_LAB_JWT_SECRET` 配置签名密钥；未配置时仅使用代码中的本地开发 fallback，不应用于正式部署。
+
 ## 一、API 设计规范
 
 ### 1.1 通用约定
@@ -233,10 +425,12 @@ POST /api/v1/auth/login
 
 ```json
 {
-  "studentId": "202430001",
+  "studentNo": "202430001",
   "password": "SecurePass123"
 }
 ```
+
+教师和管理员没有学号时使用 `email + password`；`studentNo` 与 `email` 必须且只能至少提供一个。额外字段由 shared strict schema 拒绝。
 
 **Response**:
 
@@ -247,14 +441,15 @@ POST /api/v1/auth/login
   "data": {
     "user": {
       "id": "uuid-001",
-      "studentId": "202430001",
+      "studentNo": "202430001",
+      "email": "student@example.com",
       "name": "张三",
       "role": "STUDENT"
     },
     "tokens": {
       "accessToken": "eyJhbGciOiJIUzI1NiIs...",
       "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
-      "expiresIn": 900  // 15分钟
+      "expiresIn": 3600
     }
   },
   "timestamp": "2024-06-20T08:00:00Z"
@@ -262,6 +457,8 @@ POST /api/v1/auth/login
 ```
 
 ### 2.3 刷新 Token
+
+> Week3 Day2 仅签发 refresh token 以保持响应契约兼容，刷新接口尚未开放；前端 token 失效后重新登录。正式实现刷新轮换前，不应调用下述预留接口。
 
 ```
 POST /api/v1/auth/refresh
@@ -382,6 +579,8 @@ DELETE /api/v1/users/:id
 ---
 
 ## 四、案例模块 (Cases)
+
+> **历史参考，Week3 已替代**：本章保留旧版通用 OJ 示例，不再作为当前实现依据。当前 Case/Exercise 管理、资源归属和学生可见性以 0.8 为准；Case 级 Dataset/Template 下载接口不再实施。
 
 ### 4.1 案例列表
 
@@ -569,6 +768,8 @@ PATCH /api/v1/cases/:id/status
 
 ## 五、提交模块 (Submissions)
 
+> **历史参考，Week3 已替代**：本章旧 `POST /api/v1/submissions` 方案不再实施。当前提交唯一入口为 `POST /api/v1/assignments/:assignmentId/submissions`。
+
 ### 5.1 提交代码
 
 ```
@@ -658,6 +859,7 @@ GET /api/v1/submissions/:id
     "caseNumber": "case_16",
     "caseTitle": "模拟退火算法求解TSP",
     "status": "COMPLETED",
+    "codeText": "def solve(data, params=None):\n    ...",
     "codeFileName": "my_solution.py",
     "codeFileUrl": "...",  // 可下载自己的代码
     "evaluatedSizes": ["small", "medium", "large"],
@@ -720,6 +922,8 @@ GET /api/v1/submissions/:id
   }
 }
 ```
+
+Week2 MVP 的 `GET /api/v1/submissions/:id` 响应必须包含 `codeText?: string`，用于提交详情页只读回显学生提交代码。该字段来自 `Submission.codeText`，不改变提交接口路由。
 
 ### 5.4 重新评测（教师/助教）
 
@@ -1060,6 +1264,8 @@ http://localhost:3000/api/docs
 ---
 
 ## 十二、DTO 定义汇总
+
+> 本章 class-validator 示例为早期参考。当前 Auth、Case、Exercise、Release 和 Assignment 请求契约以 `@decision-lab/shared` 导出的 Zod schema 为准。
 
 ```typescript
 // ============================================

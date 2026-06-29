@@ -1,6 +1,6 @@
 # 项目目录结构设计
 
-> 本文档记录当前项目基础目录结构和后续扩展方向。实施时以 `../plans/WEEK2_BUILD_PLAN.md` 和本文件为准，不再沿用旧版一次性完整 OJ 目录。
+> 本文档记录当前项目基础目录结构和后续扩展方向。实施时以 `../plans/WEEK3_BUILD_PLAN.md` 和本文件为准，不再沿用旧版一次性完整 OJ 目录。
 
 ---
 
@@ -38,9 +38,12 @@ decision-optimization-lab/
 │   ├── plans/
 │   │   ├── IMPLEMENTATION_PLAN.md
 │   │   ├── WEEK1_BUILD_PLAN.md
-│   │   └── WEEK2_BUILD_PLAN.md
+│   │   ├── WEEK2_BUILD_PLAN.md
+│   │   └── WEEK3_BUILD_PLAN.md
 │   ├── acceptance/
-│   │   └── VERSION_1_ACCEPTANCE.md
+│   │   ├── VERSION_1_ACCEPTANCE.md
+│   │   ├── VERSION_1_1_ACCEPTANCE.md
+│   │   └── VERSION_1_2_ACCEPTANCE.md
 │   ├── guides/
 │   │   ├── DEPLOYMENT_GUIDE.md
 │   │   ├── GIT_WORKFLOW.md
@@ -53,7 +56,8 @@ decision-optimization-lab/
 │       ├── ADR-0001-mvp-architecture.md
 │       ├── ADR-0002-monorepo-strategy.md
 │       ├── ADR-0003-shared-api-models.md
-│       └── ADR-0004-github-and-ai-collaboration.md
+│       ├── ADR-0004-github-and-ai-collaboration.md
+│       └── ADR-0005-case-exercise-release-assignment-model.md
 │
 ├── frontend/
 │   ├── src/
@@ -69,7 +73,9 @@ decision-optimization-lab/
 │   │           ├── login/
 │   │           ├── course-home/
 │   │           ├── cases/
-│   │           └── workspace-placeholder/
+│   │           ├── submissions/
+│   │           ├── teacher/
+│   │           └── workspace/
 │   ├── angular.json
 │   ├── proxy.conf.json
 │   ├── tsconfig.app.json
@@ -99,6 +105,7 @@ decision-optimization-lab/
 │   ├── storage/
 │   │   ├── submissions/
 │   │   └── results/
+│   ├── test/
 │   ├── package.json
 │   └── tsconfig.json
 │
@@ -122,6 +129,7 @@ decision-optimization-lab/
 ├── runner/
 │   ├── evaluate.py
 │   ├── schemas/
+│   ├── tests/
 │   ├── demo_submissions/
 │   └── output/
 │
@@ -139,7 +147,7 @@ decision-optimization-lab/
 | 目录 | 职责 | 当前阶段 |
 |------|------|----------|
 | `docs/design` | 系统架构、数据库、API、前端、评测和项目结构设计 | 设计依据 |
-| `docs/plans` | 总体计划、Week1 计划、Week2 计划 | 工作计划 |
+| `docs/plans` | 总体计划和各周实施计划；当前 active plan 为 Week3 | 工作计划 |
 | `docs/acceptance` | 阶段验收记录 | 验收归档 |
 | `docs/guides` | 部署、操作、运维指南 | 后续完善 |
 | `docs/references` | 外部官方参考资料归档，例如 Angular 官方 LLM 文档索引 | Day4 前端参考 |
@@ -149,23 +157,23 @@ decision-optimization-lab/
 | `.codex/config.toml` | 项目级 Codex 权限意图：工作区权限、按需审批、有限网络/localhost | 沙箱问题处理 |
 | `.env.example` | 本地开发数据库连接示例，默认 PostgreSQL 映射到 `55432` | Day2 数据库配置 |
 | `docker-compose.yml` | Week2 本地 PostgreSQL 14 开发数据库，不包含 Redis/MinIO/evaluator | Day2 数据库配置 |
-| `frontend` | Angular 主前端；已包含 app shell、登录、课程首页、case01 详情页、API client 和 auth state | Week2 Day5 进行中 |
-| `backend` | NestJS 主后端 | Week2 初始化 |
+| `frontend` | Angular 主前端；已包含 app shell、登录、课程首页、case01 详情页、实验工作区、提交详情页、教师面板、API client 和 auth state | Week2 已完成，Week3 待扩展管理页 |
+| `backend` | NestJS 主后端；Week2 API 与同步 runner 已完成 | Week3 待新增管理模块 |
 | `backend/prisma` | Prisma schema、migration 和 seed | Week2 Day2 初始化 |
 | `backend/src/prisma` | 后端唯一 Prisma Client 访问层，前端禁止直接使用 Prisma Client | Week2 Day3 初始化 |
 | `backend/src/runner-adapter` | Week2 同步调用 `runner/evaluate.py` 的本地评测适配层 | Week2 Day3 初始化 |
-| `backend/src/auth` | MVP demo 登录和当前用户接口 | Week2 Day3 初始化 |
+| `backend/src/auth` | JWT 登录、当前用户、全局认证/角色 guard、装饰器和教学班归属服务 | Week3 Day2 已完成 |
 | `backend/src/courses` | 当前课程、学期、班级和任务读取接口 | Week2 Day3 初始化 |
 | `backend/src/enrollments` | 教师端学生名单导入接口 | Week2 Day3 初始化 |
 | `backend/src/exercises` | 实验列表、详情、数据集、模板读取接口 | Week2 Day3 初始化 |
 | `backend/src/submissions` | 提交创建、状态、结果查询接口 | Week2 Day3 初始化 |
 | `backend/src/reports` | 实验报告入口预留接口，不实现完整报告流程 | Week2 Day3 初始化 |
 | `backend/src/teacher` | 教师端进度、提交列表、人工评分入口预留接口 | Week2 Day3 初始化 |
-| `packages/shared` | 前后台共享 DTO、枚举、schema、API 类型 | Week2 初始化 |
+| `packages/shared` | 前后台共享 DTO、枚举、schema、API 类型 | Week2 已接通，Week3 待补管理契约 |
 | `.nvmrc` | 固定推荐 Node LTS 版本 | Day1 验收环境 |
 | `.npmrc` | 固定 npm/pnpm 国内镜像源 | 中国网络环境依赖安装 |
 | `scripts/dev.sh` | 一键启动 Angular 前端和 NestJS 后端 | 本地开发入口 |
-| `course-assets` | 标准化课程案例资产；公开数据集放在 `course-assets/cases/<caseId>/datasets/`，用于资源包下载和本地评测读取 | 已有，持续扩展 |
+| `course-assets` | 标准化课程资产；Case 保存通用内容，Exercise 子目录保存模板、公开/隐藏数据、rubric 和 validator | Week3 调整目标 |
 | `runner` | Week1 本地评测 Runner | Week2 由 backend adapter 调用 |
 | `frontend-static` | Week1 静态门户 demo | legacy，仅保留参考 |
 | `submission-service` | Week1 过渡提交服务 | legacy，后续并入 backend |
@@ -267,7 +275,41 @@ packages/shared/
 
 ---
 
-## 5. 后置结构
+## 5. Week3 目标增量
+
+Week3 实施完成后新增以下目录，不在文档调整阶段提前创建空模块：
+
+```text
+frontend/src/app/features/
+├── admin/
+│   ├── cases/
+│   └── exercises/
+└── teacher/
+    ├── sections/
+    └── assignments/
+
+backend/src/
+├── cases/
+├── case-releases/
+└── assignments/
+
+course-assets/cases/case_01/
+├── case_manifest.json
+├── README.md
+└── exercises/
+    └── production_planning/
+        ├── exercise_manifest.json
+        ├── datasets/
+        ├── template.py
+        ├── validator.py
+        └── rubric.json
+```
+
+case01 资产迁移必须保留兼容读取，不能在数据库迁移和 runner 切换完成前删除旧路径。
+
+---
+
+## 6. 后置结构
 
 以下目录或模块只在后续阶段引入：
 
@@ -278,11 +320,11 @@ packages/shared/
 - `frontend` 中的 Monaco、多文件工程、复杂可视化模块。
 - `backend` 中的 Redis/BullMQ、MinIO、WebSocket、排行榜、审计日志模块。
 
-后置能力不应进入 Week2 主线，除非计划文档更新并明确调整范围。
+后置能力不应进入 Week3 主线，除非计划文档更新并明确调整范围。
 
 ---
 
-## 6. 本地 Node 版本说明
+## 7. 本地 Node 版本说明
 
 - `.nvmrc` 保留 Node 22 LTS 作为推荐环境和后续 CI 基线。
 - 当前本机默认 `node v23.5.0` 已验证可运行 backend/shared 构建，并可在非沙箱环境完成 Angular build。
@@ -290,7 +332,7 @@ packages/shared/
 
 ---
 
-## 7. 本地开发端口
+## 8. 本地开发端口
 
 为避免与用户本地已有服务冲突，当前 Week2 开发端口约定为：
 

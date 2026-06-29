@@ -470,24 +470,35 @@ def solve(data, params=None):
 
 ### Day 6：实验工作区、提交详情与报告入口占位
 
+状态：已于 2026-06-27 完成并通过类型检查、构建和真实 API 提交验证。
+
 目标：
 
+- 先补齐 shared/API 响应类型，消除前端 API response 本地重复定义。
 - 跑通学生端核心实验闭环。
 - 提交详情页预留报告入口，但不实现完整报告流程。
 
 交付：
 
+- shared 类型对齐：
+  - `packages/shared` 补齐登录、课程首页、实验列表/详情、数据集入口、提交创建、提交详情、教师进度和教师提交列表响应类型。
+  - `frontend/src/app/core/api-client.service.ts` 只从 `@decision-lab/shared` 导入 API 响应类型，不再定义重复的 response interface。
+  - 组件内可保留纯 UI view model，但 API 契约必须来自 shared。
 - `/exercises/:exerciseId/workspace`：
   - 左侧题目、数据、输入输出规范、评分规则。
+  - 模板内容来自 `GET /api/v1/exercises/:id/template`。
   - 中间代码 textarea。
+  - `localStorage` 草稿保存与恢复，key 固定为 `decision-lab.workspace.draft:{exerciseId}`。
+  - 重置为模板按钮。
   - 数据集选择。
+  - 资源包下载入口。
   - 提交按钮。
-  - 本地编辑内容保留或刷新保护。
-  - 右侧评测结果。
+  - 右侧提交结果面板，展示 status、score、objective、optimalObjective、gap、messages。
   - 报告入口占位。
 - `/submissions/:submissionId`：
   - 提交状态。
   - 分数。
+  - `codeText` 只读回显。
   - objective、optimalObjective、gap。
   - messages。
   - artifacts/metrics JSON 或结构化摘要。
@@ -500,14 +511,18 @@ def solve(data, params=None):
 - 错误代码返回 `FAILED`、`RUNTIME_ERROR` 或 `INVALID_OUTPUT`，并显示可读消息。
 - 提交后能跳转到提交详情。
 - 提交详情页显示报告入口占位，不进入完整报告编辑。
+- `api-client.service.ts` 不再定义与 shared 重复的 API response 类型。
 
 风险控制：
 
+- 先完成 shared 类型对齐，再实现页面，避免继续扩大前端类型漂移。
 - 代码编辑先用 textarea，Monaco 后置。
 - 不做多文件工程上传。
 - 不做复杂可视化，只保证结构化反馈清楚。
 
 ### Day 7：教师面板、集成验收与文档收口
+
+状态：已于 2026-06-28 完成。教师面板、真实数据库 API、精度修复后的提交链路和 Version 1.1 验收均已通过；当前运行环境未提供 in-app browser，因此未执行截图式视觉验收。
 
 目标：
 
@@ -517,11 +532,13 @@ def solve(data, params=None):
 交付：
 
 - `/teacher` 教师面板：
+  - 从当前学期 section 列表默认选择第一个教学班。
   - 班级进度。
   - 提交总数。
   - 通过率。
-  - 平均分。
+  - 平均分 `averageScore`。
   - 提交列表。
+  - 提交列表记录可跳转到 `/submissions/:submissionId`。
   - 人工评分入口占位。
 - `VERSION_1_1_ACCEPTANCE.md`。
 - 更新 `README.md` 的启动命令、Week2 状态、已知限制。
@@ -539,6 +556,7 @@ def solve(data, params=None):
 
 - 教师端只做进度与提交查看，不做完整成绩导出。
 - Day 7 重点是集成验收，不再引入新技术栈。
+- HTTP Authorization interceptor、全局错误提示和 404 页面仅作为时间允许时的增强，不作为 Week2 完成条件。
 
 ---
 
@@ -565,6 +583,11 @@ pnpm --filter frontend test -- --watch=false
 pnpm turbo typecheck
 pnpm turbo build
 ```
+
+类型契约检查：
+
+- `frontend/src/app/core/api-client.service.ts` 不应定义与后端响应重复的 API response interface。
+- 前端 API client 使用的登录、课程、实验、提交、教师面板响应类型必须从 `@decision-lab/shared` 导入。
 
 手动验收：
 

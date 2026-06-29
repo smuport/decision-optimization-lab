@@ -13,7 +13,7 @@
 
 | 域 | 关键实体 | 说明 |
 |----|----------|------|
-| 教学组织 | Course、Term、ClassSection、Enrollment | 管理课程、学期、教学班、学生名单 |
+| 教学组织与发布 | Course、Term、ClassSection、Enrollment、SectionCaseRelease、Assignment | 管理课程、学期、教学班、学生、案例可见性和作业发布 |
 | 实验内容 | Case、Exercise、Dataset、Template、Rubric | 管理案例、具体实验任务、数据、模板、评分规则 |
 | 提交评测 | Submission、RunResult、EvaluationArtifact | 管理代码提交、每个数据集运行结果、日志和可视化数据 |
 | 成绩反馈 | Score、Report、ManualGrade、Feedback | 管理最佳成绩、实验报告、人工补评分和教师反馈 |
@@ -200,6 +200,7 @@ run_results
 scores
 reports
 manual_grades
+section_case_releases
 ```
 
 `leaderboards`、`audit_logs`、`system_configs` 可以后置。审计日志在正式部署前补上即可，排行榜不应成为第一阶段目标。
@@ -220,6 +221,144 @@ postgresql://decision_lab:decision_lab_dev@127.0.0.1:55432/decision_lab?schema=p
 ```
 
 如果本机已经设置了其他项目的 `DATABASE_URL`，应优先使用项目专用的 `DECISION_LAB_DATABASE_URL`，避免 Prisma 命中错误数据库。
+
+### 0.6 Week2 教师统计口径
+
+Week2 教师面板直接从 `Submission.runResult.score` 统计当前提交记录的平均分，未产生 `RunResult` 或 `score` 为空的提交不计入分母。`Score` 表继续保留为后续正式成绩册和学生最佳成绩快照，但 Week2 同步提交流程尚不维护该快照，因此教师面板不以 `Score` 作为实时统计来源。
+
+### 0.7 Week3 案例发布与作业管理模型
+
+Week3 以下列关系作为唯一权威模型：
+
+```text
+Case 1 ── N Exercise
+Exercise 1 ── N Dataset / Template / Rubric
+ClassSection 1 ── N SectionCaseRelease N ── 1 Case
+ClassSection 1 ── N Assignment N ── 1 Exercise
+Assignment 1 ── N Submission
+```
+
+新增枚举：
+
+```prisma
+enum CaseReleaseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ExerciseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum AssignmentStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+  ARCHIVED
+}
+```
+
+新增教学班案例发布实体：
+
+```prisma
+model SectionCaseRelease {
+  id           String            @id @default(uuid())
+  sectionId    String            @map("section_id")
+  caseId       String            @map("case_id")
+  status       CaseReleaseStatus @default(DRAFT)
+  visibleFrom  DateTime?         @map("visible_from")
+  visibleUntil DateTime?         @map("visible_until")
+  sortOrder    Int               @default(0) @map("sort_order")
+  publishedAt  DateTime?         @map("published_at")
+  createdById  String            @map("created_by_id")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+  section      ClassSection      @relation("SectionCaseReleaseSection", fields: [sectionId], references: [id], onDelete: Cascade)
+  case         Case              @relation("SectionCaseReleaseCase", fields: [caseId], references: [id], onDelete: Restrict)
+  createdBy    User              @relation("CaseReleaseCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@unique([sectionId, caseId])
+  @@index([caseId])
+  @@index([createdById])
+  @@map("section_case_releases")
+}
+```
+
+`Exercise` 增加：
+
+```prisma
+code        String
+description String?
+status      ExerciseStatus @default(DRAFT)
+assetPath   String         @map("asset_path")
+
+@@unique([caseId, code])
+```
+
+`Assignment` 增加：
+
+```prisma
+description  String?
+status       AssignmentStatus @default(DRAFT)
+publishedAt  DateTime?        @map("published_at")
+createdById  String           @map("created_by_id")
+createdBy    User             @relation("AssignmentCreator", fields: [createdById], references: [id], onDelete: Restrict)
+```
+
+同时补充反向关系：
+
+```prisma
+model User {
+  createdCaseReleases SectionCaseRelease[] @relation("CaseReleaseCreator")
+  createdAssignments  Assignment[]         @relation("AssignmentCreator")
+}
+
+model ClassSection {
+  caseReleases SectionCaseRelease[] @relation("SectionCaseReleaseSection")
+}
+
+model Case {
+  sectionReleases SectionCaseRelease[] @relation("SectionCaseReleaseCase")
+}
+```
+
+删除 `Assignment` 的 `@@unique([sectionId, exerciseId])`，保留普通索引，允许同一教学班在不同教学周期重新发布同一 Exercise。
+
+Assignment 的学生可用状态不单独持久化，根据字段计算：
+
+| 计算状态 | 条件 |
+|----------|------|
+| UPCOMING | `status=PUBLISHED` 且当前时间早于 `opensAt` |
+| OPEN | `status=PUBLISHED` 且当前时间位于开放与截止区间 |
+| LATE | `status=PUBLISHED`、已过 `dueAt` 且 `allowLate=true` |
+| CLOSED | 状态为 CLOSED/ARCHIVED，或已过截止时间且不允许迟交 |
+
+业务约束：
+
+- 学生可见 Case 必须同时满足 ACTIVE Enrollment、PUBLISHED SectionCaseRelease 和可见时间窗口；空边界表示不限制，非空边界使用 `visibleFrom <= now <= visibleUntil`。
+- 发布 Assignment 时，Exercise 必须为 PUBLISHED，所属 Case 必须已发布给该教学班，练习资源完整性检查必须通过。
+- Case 为 ARCHIVED 时禁止新建 SectionCaseRelease；Exercise 为 ARCHIVED 时禁止新建 Assignment。
+- 已有关联发布、作业或提交的 Case、Exercise、Assignment 不物理删除，只能归档。
+- Dataset、Template、Rubric 只通过 `exerciseId` 归属 Exercise，不直接归属 Case。
+- Case/Exercise 归档后，学生仍可通过自己已有的历史 Assignment、Submission 或 Score 读取快照式历史内容，但不能创建新发布或新作业。
+
+> 本文后续“一、ER 图”及旧版完整 OJ schema 为历史参考；如与 0.7 冲突，以 0.7 和实际 Prisma schema 为准。Week3 文档收口后应逐步删除其中 Case 直连 Dataset/Template/SubDataset 的旧示例。
+
+### 0.8 Week3 Day1 实施状态
+
+2026-06-29 已在 `backend/prisma/schema.prisma` 和 migration `20260629000000_week3_day1_management_foundation` 中实现上述模型：
+
+- 新增 `CaseReleaseStatus`、`ExerciseStatus`、`AssignmentStatus` 与 `section_case_releases`。
+- Exercise 已增加唯一业务 code、描述、状态和资产路径；Assignment 已增加描述、持久化状态、发布时间和创建人。
+- Assignment 的 `(sectionId, exerciseId)` 已由唯一约束改为普通索引，允许同班重复发布同一练习。
+- migration 先回填后收紧非空约束，保留原 Assignment id 及其 Submission、RunResult、Score 外键；现有作业关系会推导出 PUBLISHED CaseRelease。
+- seed 保留 Week2 演示数据，新增 ADMIN、第二教师、第二学生和无 CaseRelease 的可见性对照班。
+- 数据关系验收 SQL 位于 `backend/prisma/tests/week3_day1_data_check.sql`，会检查回填关系、孤立外键、跨班隔离和同练习重复作业能力，并在事务中回滚测试数据。
+
+`pnpm verify:week3:day1` 已在本地 PostgreSQL 完成空库 migration、重复 seed、现有 Week2 数据库 migration 和事务化数据关系检查。迁移前后均为 20 条 Submission、20 条 RunResult 和 0 条 Score；原 Assignment id 及其外键保持不变。演示班有一个 PUBLISHED case01 Release，可见性对照班没有 Release。
 
 ## 一、ER 图（实体关系概览）
 

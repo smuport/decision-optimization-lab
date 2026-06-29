@@ -17,14 +17,63 @@
 第一版的关键不是服务数量，而是课程资产接口稳定。所有架构都应围绕如下核心契约：
 
 ```text
-Case Manifest + Dataset + Template + Validator + Rubric
+Case Content
         ↓
-Submission Code
+Exercise Package (Dataset + Template + Validator + Rubric)
         ↓
-Structured Evaluation Result
+Assignment Publication
+        ↓
+Submission → Structured Evaluation Result
         ↓
 Student Feedback + Teacher Dashboard
 ```
+
+### 1.1 Week3 教学发布模型
+
+Week3 将课程内容、可执行练习和教学班发布严格分层：
+
+```text
+Course
+└── Case
+    └── Exercise
+        ├── Dataset
+        ├── Template
+        ├── Rubric
+        └── Validator
+
+ClassSection
+├── SectionCaseRelease → Case
+└── Assignment → Exercise
+```
+
+- `Case` 是课程共享的案例内容，由 ADMIN 维护。
+- `Exercise` 是 Case 下可执行、可评测、可下载资源的练习定义，由 ADMIN 维护。
+- `SectionCaseRelease` 控制某个教学班能否阅读某个 Case，由该班 TEACHER 管理。
+- `Assignment` 将某个 Exercise 以开放时间、截止时间、提交次数和迟交规则发布给教学班。
+
+学生不使用公共案例库。学生访问路径必须为：
+
+```text
+当前用户
+→ ACTIVE Enrollment
+→ ClassSection
+→ PUBLISHED SectionCaseRelease（且位于可见时间窗口）
+→ Case
+→ 本班 Assignment
+→ Exercise
+```
+
+Case 已发布到班级但尚无 Assignment 时，学生可以阅读案例，但不能进入 Exercise 工作区或下载练习资源。Assignment 关闭后，案例、历史提交和成绩仍可读取。
+
+### 1.2 Week3 权限边界
+
+| 角色 | 权限 |
+|------|------|
+| ADMIN | 创建、编辑、发布和归档课程级 Case/Exercise；检查练习资源完整性 |
+| TEACHER | 管理自己负责的 ClassSection、学生名单、SectionCaseRelease 和 Assignment |
+| STUDENT | 读取所属教学班发布的 Case，以及本班 Assignment 对应的 Exercise、资源和提交 |
+
+所有学生和教师访问都由后端根据当前认证用户计算，不接受客户端用 `userId`、`sectionId` 绕过归属校验。
 
 ---
 
@@ -204,6 +253,7 @@ backend/src/
 ├── enrollments/
 ├── cases/
 ├── exercises/
+├── case-releases/
 ├── assignments/
 ├── submissions/
 ├── reports/
@@ -217,7 +267,8 @@ backend/src/
 - `courses`：当前课程、当前学期、教学班。
 - `enrollments`：名单导入和班级学生。
 - `cases` / `exercises`：案例与实验任务。
-- `assignments`：班级维度的实验发布、截止时间和提交入口。
+- `case-releases`：教学班案例可见性、可见时间和排序。
+- `assignments`：将 Exercise 发布到教学班，管理截止时间、提交次数、迟交规则和提交入口。
 - `submissions`：创建提交、状态、结果、提交详情。
 - `reports`：Week2 只保留报告提交入口与数据模型，不做完整报告流程。
 - `teacher`：班级进度、提交列表、人工评分入口。
@@ -231,7 +282,7 @@ backend/src/
 
 | 域 | 关键实体 | 说明 |
 |----|----------|------|
-| 教学组织 | Course、Term、ClassSection、Enrollment | 管理课程、学期、教学班、学生名单 |
+| 教学组织与发布 | Course、Term、ClassSection、Enrollment、SectionCaseRelease、Assignment | 管理课程、教学班、学生、案例可见性和作业发布 |
 | 实验内容 | Case、Exercise、Dataset、Template、Rubric | 管理案例、具体实验任务、数据、模板、评分规则 |
 | 提交评测 | Submission、RunResult、EvaluationArtifact | 管理代码提交、各数据集运行结果、日志和可视化数据 |
 | 成绩反馈 | Score、Report、ManualGrade、Feedback | 管理最佳成绩、实验报告、人工补评分和教师反馈 |
@@ -255,6 +306,7 @@ run_results
 scores
 reports
 manual_grades
+section_case_releases
 ```
 
 `leaderboards`、`audit_logs`、`system_configs` 后置。
@@ -263,7 +315,7 @@ manual_grades
 
 ## 6. API 边界
 
-MVP API 以 `BACKEND_API_DESIGN.md` 的修订版为准：
+Week3 API 以 `BACKEND_API_DESIGN.md` 的 0.8 节为准。核心边界为：
 
 ```text
 GET  /api/v1/health
@@ -271,26 +323,24 @@ GET  /api/v1/health
 POST /api/v1/auth/login
 GET  /api/v1/auth/me
 
-GET  /api/v1/courses/current
-GET  /api/v1/terms/current/sections
-POST /api/v1/admin/sections/:id/enrollments/import
+GET  /api/v1/admin/cases
+GET  /api/v1/admin/cases/:id/exercises
+GET  /api/v1/admin/exercises/:id/resource-check
 
-GET  /api/v1/exercises
-GET  /api/v1/exercises/:id
-GET  /api/v1/exercises/:id/datasets
-GET  /api/v1/exercises/:id/template
+GET  /api/v1/teacher/sections/:id/case-releases
+GET  /api/v1/teacher/sections/:id/assignments
+
+GET  /api/v1/me/cases
+GET  /api/v1/me/assignments
+GET  /api/v1/me/assignments/:id
 
 POST /api/v1/assignments/:id/submissions
+GET  /api/v1/exercises/:id/resources/download
 GET  /api/v1/submissions/:id
 GET  /api/v1/submissions/:id/results
-POST /api/v1/submissions/:id/report
-
-GET  /api/v1/teacher/sections/:id/progress
-GET  /api/v1/teacher/assignments/:id/submissions
-PATCH /api/v1/teacher/submissions/:id/manual-grade
 ```
 
-Week2 可以采用同步本地评测实现，但接口响应仍应保留状态查询和结果查询结构，避免未来从同步 runner 切换到异步队列时破坏前端契约。
+Week3 继续使用同步本地评测。Week2 的全量 `/exercises` 读取只作为迁移兼容，不得作为学生可见性依据。
 
 ---
 
@@ -300,7 +350,7 @@ MVP 文件策略：
 
 - 学生代码保存到 `backend/storage/submissions/<submissionId>/solution.py`。
 - 运行日志保存到 `backend/storage/results/<submissionId>.json` 或同级日志文件。
-- 公开数据集继续来自 `course-assets/cases/<caseId>/datasets`。
+- Case 通用内容来自 `course-assets/cases/<caseCode>/`；Exercise 评测资源来自 `course-assets/cases/<caseCode>/exercises/<exerciseCode>/`。
 - 数据库记录提交路径、结果路径、hash、状态、评分和结构化反馈。
 
 本地 Runner 策略：

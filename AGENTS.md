@@ -17,7 +17,7 @@ Before making non-trivial changes, read these files in order:
 5. `docs/design/PROJECT_STRUCTURE.md`
 6. `docs/guides/IMPLEMENTATION_GUARDRAILS.md`
 7. `docs/guides/GIT_WORKFLOW.md`
-8. The active plan for the current phase, currently `docs/plans/WEEK2_BUILD_PLAN.md`
+8. The active plan for the current phase, currently `docs/plans/WEEK3_BUILD_PLAN.md`
 
 If the task touches database, backend API, frontend, or evaluation logic, also read the relevant design document:
 
@@ -37,7 +37,7 @@ Priority order:
 1. Explicit latest user instruction in the current conversation.
 2. `AGENTS.md`
 3. `docs/PROJECT_STATE.md`
-4. Active phase plan, currently `docs/plans/WEEK2_BUILD_PLAN.md`
+4. Active phase plan, currently `docs/plans/WEEK3_BUILD_PLAN.md`
 5. Design documents in `docs/design/`
 6. ADRs in `docs/decisions/`
 7. README and other supporting docs
@@ -48,9 +48,9 @@ If two documents conflict, stop and ask the user for confirmation before impleme
 
 ## 3. Current Implementation Direction
 
-The project is currently in the transition from Week1 demo to Week2 MVP platform skeleton.
+The project has completed the Week2 MVP student/teacher demo loop and is entering the Week3 management control plane.
 
-Week2 target:
+Week3 target:
 
 - Angular frontend
 - NestJS backend
@@ -58,10 +58,13 @@ Week2 target:
 - PostgreSQL
 - `packages/shared` for frontend/backend API contracts
 - `pnpm workspace + Turborepo`
-- Local runner adapter using the existing `runner/evaluate.py`
-- Local file storage for MVP submissions and results
+- ADMIN Case/Exercise catalog management
+- TEACHER ClassSection case release and Assignment management
+- Strict student visibility through ACTIVE Enrollment and SectionCaseRelease
+- Exercise-owned resources and Assignment-centric workspace/submission access
+- Preserve the existing local runner and local file storage
 
-Do not introduce Redis, BullMQ, MinIO, an independent FastAPI evaluator, Docker sandbox, leaderboard, WebSocket, Monaco editor, or full report/manual grading workflow during Week2 unless the user explicitly updates the plan.
+Do not introduce new cases, Redis, BullMQ, MinIO, an independent FastAPI evaluator, Docker sandbox, leaderboard, WebSocket, Monaco editor, online evaluator-asset editing, or full report/manual grading workflow during Week3 unless the user explicitly updates the plan.
 
 ---
 
@@ -73,7 +76,7 @@ Do not introduce Redis, BullMQ, MinIO, an independent FastAPI evaluator, Docker 
 - Do not cross-import shared source by relative path such as `../../packages/shared/src`.
 - API routes must follow `docs/design/BACKEND_API_DESIGN.md`.
 - Submission creation must use `POST /api/v1/assignments/:id/submissions`.
-- `Report` and `ManualGrade` are included in Week2 schema and shared types, but only as placeholder entry points in UI/API.
+- `Report` and `ManualGrade` remain placeholder entry points during Week3; the management control plane is the current priority.
 - `frontend-static` and `submission-service` are legacy Week1 artifacts. Keep them for reference, but do not build new main-platform features there.
 
 ---
@@ -129,7 +132,7 @@ Any change that affects architecture, workflow, API contract, data model, direct
 Examples:
 
 - Architecture decision changes: add or update ADR in `docs/decisions/`.
-- Week2 scope changes: update `docs/plans/WEEK2_BUILD_PLAN.md`.
+- Week3 scope changes: update `docs/plans/WEEK3_BUILD_PLAN.md`.
 - Directory structure changes: update `docs/design/PROJECT_STRUCTURE.md`.
 - Current progress changes: update `docs/PROJECT_STATE.md`.
 

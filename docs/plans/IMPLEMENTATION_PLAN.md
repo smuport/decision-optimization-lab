@@ -28,6 +28,19 @@
 
 完成这 3 类后，再把 case_02 ~ case_18 逐步接入。
 
+### 当前阶段调整（Week3）
+
+Week2 已用 case01 验证学生提交与教师查看闭环。Week3 暂不扩展 case04、case16 或其他案例，优先完成教学管理控制面：
+
+```text
+ADMIN 管理 Case/Exercise
+→ TEACHER 管理 ClassSection 的案例可见性
+→ TEACHER 将 Exercise 发布为 Assignment
+→ STUDENT 按班级读取和提交
+```
+
+当前权威关系为 `Case → Exercise`、`ClassSection → SectionCaseRelease → Case` 和 `ClassSection → Assignment → Exercise`。模板、数据集、rubric 和 validator 归属 Exercise。完成该控制面并经过真实班级试用后，再决定案例扩展顺序。
+
 ---
 
 ## 二、阶段 0：课程资产盘点与标准化

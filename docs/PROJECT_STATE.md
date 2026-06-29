@@ -2,17 +2,21 @@
 
 > This file is the external memory for the project. Update it after every meaningful implementation or documentation change.
 
-Last updated: 2026-06-26
+Last updated: 2026-06-29
 
 ---
 
 ## Current Phase
 
-Week2 Day5 completed: case01 detail page, teaching tabs, small dataset table, LP modeling guide, PuLP guide, template preview, dataset entry, and workspace entry.
+Week2 Day7 completed: teacher progress API statistics, teacher dashboard, assignment submission list, submission-detail navigation, evaluator numeric tolerance fix, automated verification, and real database API acceptance.
+
+Week3 Day1 completed: shared management contracts and runtime schemas, the SectionCaseRelease/Exercise/Assignment Prisma model, compatible migration, two-section seed data, migration data-check SQL, empty-database verification, repeated seed, and existing Week2 database migration have all passed.
+
+Week3 Day2 completed: bcrypt-backed demo accounts, JWT authentication, global auth/role guards, section ownership checks, trusted current-user submission and grading, scoped existing APIs, frontend session recovery/interceptor/role routes, and real two-section permission acceptance have passed.
 
 Follow-up completed: case01 teaching resources now provide a real downloadable resource package while preserving JSON APIs for preview/workspace initialization.
 
-The project has completed Week1 demo assets, Week2 Day1 platform skeleton setup, Week2 Day2 database baseline, Week2 Day3 backend MVP API implementation, Week2 Day4 frontend entry flow, and Week2 Day5 case01 teaching detail page.
+The project has completed Week1 demo assets and Week2 Day1 through Day7. Version 1.1 has passed automated and real database API acceptance; screenshot-style visual acceptance remains unavailable in the current Codex runtime.
 
 ---
 
@@ -21,7 +25,8 @@ The project has completed Week1 demo assets, Week2 Day1 platform skeleton setup,
 - Project instructions: `../AGENTS.md`
 - Architecture: `design/ARCHITECTURE.md`
 - Project structure: `design/PROJECT_STRUCTURE.md`
-- Week2 plan: `plans/WEEK2_BUILD_PLAN.md`
+- Active plan: `plans/WEEK3_BUILD_PLAN.md`
+- Completed Week2 plan: `plans/WEEK2_BUILD_PLAN.md`
 - Implementation guardrails: `guides/IMPLEMENTATION_GUARDRAILS.md`
 - Git workflow: `guides/GIT_WORKFLOW.md`
 - ADRs: `decisions/`
@@ -45,6 +50,11 @@ The project has completed Week1 demo assets, Week2 Day1 platform skeleton setup,
 - `.nvmrc` keeps Node 22 LTS as the recommended/CI baseline, but the current local default Node 23.5.0 has been verified for backend/shared builds and non-sandbox Angular build. If Angular build fails with `SIGABRT` inside Codex, treat it as a sandbox/runtime-permission issue before changing Node versions.
 - Local development uses backend port `3002` and frontend port `4300` to avoid conflicts with the user's existing local `3000` and `4200` services.
 - Frontend uses `@angular/forms` from Angular 21.2.16; dependency installation for the whole workspace should use Node 22 because Prisma 7 install scripts reject Node 23.
+- Week3 uses `Case → Exercise` for shared content, `SectionCaseRelease → Case` for strict teaching-class visibility, and `Assignment → Exercise` for class-specific task publication.
+- Students do not have a public case catalog; they only see cases released to an ACTIVE enrollment section.
+- ADMIN maintains Case/Exercise metadata and status. TEACHER manages releases and assignments only for sections they teach.
+- Exercise owns templates, datasets, rubric, validator, output schema, and downloadable resources. Assignment adds section, schedule, attempt, and late-submission rules.
+- Week3 does not provide online editing/upload of templates, datasets, rubric, or validator; repository assets remain the source of truth.
 
 ---
 
@@ -166,6 +176,82 @@ The project has completed Week1 demo assets, Week2 Day1 platform skeleton setup,
   - Added `/exercises/:exerciseId/workspace` placeholder route so the Day5 workspace entry has a real landing page while full workspace implementation remains Day6 scope.
   - `case_04` and `case_16` keep basic metadata only.
   - Updated `scripts/dev.sh` to keep frontend `4300`, backend `3002`, and Angular proxy config aligned.
+- Implemented Week2 Day6 shared/API contract alignment:
+  - Added login, course, exercise, dataset, submission, current-section, teacher-progress, and teacher-submission response types to `@decision-lab/shared`.
+  - Removed duplicated API response interfaces from `frontend/src/app/core/api-client.service.ts`.
+  - Updated frontend consumers to import API contracts from `@decision-lab/shared`.
+  - Added `codeText` to `GET /api/v1/submissions/:id` for read-only submission replay.
+- Completed Week3 design package:
+  - ADR-0005 for Case, Exercise, SectionCaseRelease, Assignment, visibility, ownership, and role boundaries
+  - authoritative architecture, database, API, frontend, evaluation, and project-structure updates
+  - `WEEK3_BUILD_PLAN.md` with Day1-Day7 delivery and verification gates
+  - daily implementation specifications covering prerequisites, step-by-step changes, test scenarios, acceptance criteria, and documentation closeout
+  - `VERSION_1_2_ACCEPTANCE.md` with role, visibility, resource, submission, and compatibility scenarios
+- Implemented Week3 Day1 persistence and contract foundation:
+  - shared Week3 statuses, management DTOs, request types, and Zod runtime validation schemas
+  - `SectionCaseRelease` with release window, ordering, publisher, timestamps, indexes, and explicit inverse relations
+  - Exercise code/description/status/assetPath and `(caseId, code)` uniqueness
+  - Assignment description/status/publishedAt/createdById and non-unique `(sectionId, exerciseId)` index
+  - compatible migration that backfills case01, the existing Exercise, Assignment creators/status, and releases without replacing historical ids
+  - idempotent seed for demo ADMIN, two teachers, two students, two sections, and one deliberately unreleased visibility section
+  - transactional data-check SQL for migration relations, orphan detection, visibility isolation, and repeated Exercise assignment
+- Verified Week3 Day1 code-level checks:
+  - `pnpm --filter @decision-lab/shared build`
+  - shared runtime validation accepts valid assignment input and rejects an inverted release window
+  - `pnpm --filter backend prisma:validate`
+  - `pnpm --filter backend typecheck`
+  - `pnpm --filter backend build`
+  - `pnpm --filter frontend exec ngc -p tsconfig.app.json`
+  - `pnpm --filter backend test` (5 passed, including 3 Week3 Day1 contract/migration invariant tests)
+  - `git diff --check`
+- Verified Week3 Day1 database acceptance with `pnpm verify:week3:day1`:
+  - backed up the Week2 development database to `/tmp/decision_lab_before_week3_day1.dump`
+  - applied both migrations to an empty verification database
+  - ran seed twice without duplicate sections, releases, or assignments
+  - migrated the existing development database while preserving Assignment id `9924e441-d2d3-479a-98ed-3c7383b48299`
+  - preserved 20 Submission rows, 20 RunResult rows, 0 Score rows, and all tested foreign-key relations
+  - confirmed the demo section has one PUBLISHED case01 release and the visibility-control section has none
+  - confirmed the same section can create another Assignment for the same Exercise inside a rolled-back verification transaction
+- Implemented and verified Week3 Day2 authentication and authorization:
+  - `@nestjs/jwt` access/refresh token signing and `bcryptjs` password verification
+  - active-account validation and server-side user/role refresh on every authenticated request
+  - global `JwtAuthGuard`, `RolesGuard`, `@Public()`, `@Roles()`, and `@CurrentUser()`
+  - `SectionAccessService` for ACTIVE Enrollment, owned section, Assignment, Submission, and Exercise access
+  - unified numeric `ApiError` responses for 400/401/403/404/500 and `SECTION_ACCESS_DENIED` details
+  - frontend Authorization interceptor, `/auth/me` restoration, role guards, role navigation, and 401/403/404 pages
+  - authenticated blob download for Exercise resource packages
+  - 12 backend tests and 5 frontend auth-policy/functional-guard tests passing
+  - real logins for ADMIN, two TEACHER accounts, and two STUDENT accounts
+  - real 401, role 403, cross-section teacher/student 403, resource isolation, and malicious `userId` rejection
+  - successful case01 submission `602ce0f4-063e-4cca-bc47-79a019a8447e` with score 95 using the JWT student identity
+- Implemented the real `/exercises/:exerciseId/workspace`:
+  - exercise, dataset, output-schema, and rubric summary
+  - template-loaded Python textarea
+  - local draft key `decision-lab.workspace.draft:{exerciseId}`
+  - reset-to-template action
+  - dataset selection and resource package download
+  - real assignment-centric submission and synchronous result panel
+  - status, score, objective, optimalObjective, gap, feasibility, and messages
+  - submission-detail navigation and report placeholder
+- Implemented `/submissions/:submissionId`:
+  - status, score, attempt, submit/complete time, and late status
+  - read-only `codeText`
+  - objective, optimalObjective, gap, feasibility, and messages
+  - metrics/artifacts JSON summaries
+  - workspace navigation and report placeholder
+- Fixed case01 floating-point evaluation boundaries:
+  - unified absolute and relative tolerance through `rubric.json`
+  - scale-aware resource-limit comparison
+  - tolerant objective consistency and optimality comparison
+  - finite-number validation
+  - regression tests for rounded correct output, real constraint violation, and material objective mismatch
+- Implemented Week2 Day7 teacher flow:
+  - `averageScore` for section and assignment progress summaries
+  - current-term section loading with the first section selected by default
+  - assignment overview and selectable submission list
+  - submission-detail navigation
+  - manual-grade placeholder without implementing the full grading flow
+  - real backend tests for teacher average-score behavior
 - Verified Week2 Day3:
   - `python3 runner/evaluate.py --case case_01 --dataset small --submission runner/demo_submissions/case_01_demo.py`
   - `pnpm --filter backend typecheck`
@@ -209,17 +295,51 @@ The project has completed Week1 demo assets, Week2 Day1 platform skeleton setup,
   - `GET http://localhost:4300/cases/case_16`
   - `GET http://localhost:4300/exercises/exercise-case01-production-planning/workspace`
   - `bash -n scripts/dev.sh`
+- Verified Week2 Day6:
+  - `pnpm --filter @decision-lab/shared build`
+  - `pnpm --filter backend typecheck`
+  - `pnpm --filter backend build`
+  - `pnpm --filter frontend exec ngc -p tsconfig.app.json`
+  - `pnpm --filter frontend build` under non-sandbox execution with local Node 23.5.0; the same sandboxed command hit the known `SIGABRT`
+  - real `POST /api/v1/assignments/:id/submissions` returned `SUCCESS` for a feasible case01 solution
+  - real failed submission returned `RUNTIME_ERROR` with readable messages
+  - `GET /api/v1/submissions/:id` returned `codeText`, result, metrics, artifacts, and report placeholder
+  - Angular workspace and submission-detail routes returned HTTP 200 on a temporary local verification server
+  - in-app browser visual verification was unavailable because no browser instance was exposed in the current Codex runtime
+- Verified Week2 Day7 implementation:
+  - `python3 -m unittest discover -s runner/tests -p 'test_*.py' -v` (3 passed)
+  - case01 demo runner returned `SUCCESS`, score 95, and gap 0
+  - `pnpm --filter @decision-lab/shared build`
+  - `pnpm --filter backend test` (2 passed)
+  - `pnpm --filter backend typecheck`
+  - `pnpm --filter backend build`
+  - `pnpm --filter backend prisma:validate`
+  - `pnpm --filter frontend exec ngc -p tsconfig.app.json`
+  - frontend production build passed outside the sandbox; sandboxed Angular build hit the known `SIGABRT`
+  - `pnpm turbo typecheck` completed shared/backend tasks but sandboxed Angular/esbuild deadlocked and exited 137
+  - real demo login and current-section APIs against PostgreSQL
+  - real teacher progress returned section/assignment `averageScore = 35.47`
+  - real teacher assignment submissions returned detail-navigation ids
+  - a four-decimal optimal solution returned `SUCCESS` through NestJS, runner, and PostgreSQL
+  - Angular development server built and started on temporary port `4302` with the current backend on `3007`
 
 ---
 
 ## Next Implementation Step
 
-Start Week2 Day 6:
+Start Week3 Day3 from `plans/WEEK3_BUILD_PLAN.md`: implement ADMIN Case list, create, detail, edit, status transitions, history protection, and management UI using the verified Day2 role boundary.
 
-1. Implement `/exercises/:exerciseId/workspace` with left guide, middle code textarea, dataset selection, submit button, result panel, and report placeholder.
-2. Implement `/submissions/:submissionId` detail page with status, score, objective, optimalObjective, gap, messages, metrics/artifacts summary, and report placeholder.
-3. Submit case01 default/demo code through the frontend and show structured feedback.
-4. Keep Monaco, multi-file uploads, complex visualization, and full report editing out of Week2 Day6.
+---
+
+## Planning Notes
+
+- Shared response contracts are now wired through the frontend API client; UI-only view models may remain local.
+- Week2 feature implementation and runtime database API acceptance are complete.
+- Week3 Day1 and Day2 are complete; Day3 ADMIN Case management is next.
+- Week3 remains case01-only and focuses on the management control plane rather than new cases or infrastructure.
+- HTTP Authorization interceptor, global error toast/handler, and 404 page are useful polish, but non-blocking for Week2 completion.
+- `GET /api/v1/submissions/:id` now exposes `codeText` for Week2 read-only code replay.
+- `GET /api/v1/teacher/sections/:id/progress` now exposes section and assignment `averageScore`.
 
 ---
 
@@ -229,6 +349,9 @@ Start Week2 Day 6:
 - `codex doctor` currently reports WebSocket/HTTP reachability warnings in this environment; use approved fallback execution or local terminal verification when needed.
 - `pnpm turbo typecheck` can be killed with exit 137 during Angular build in this Codex environment; individual `frontend build`, `backend typecheck`, and `shared build` passed.
 - `localhost:3000` and `localhost:4200` may already be occupied by the user's local services; use `3002`/`4300` for this project during Week2.
+- On 2026-06-28, direct sandbox access to PostgreSQL returned `EPERM`; scoped non-sandbox verification succeeded against the healthy Docker PostgreSQL service.
+- On 2026-06-29, an earlier scoped-execution interruption temporarily prevented Docker access; after the channel recovered, `pnpm verify:week3:day1` completed the empty and existing database migration gates successfully.
+- The current runtime did not expose an in-app browser instance, so screenshot-style visual acceptance was not performed.
 
 ---
 

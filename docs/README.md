@@ -19,10 +19,13 @@
 - [总体递进式实施计划](plans/IMPLEMENTATION_PLAN.md)
 - [Week1 构建计划](plans/WEEK1_BUILD_PLAN.md)
 - [Week2 构建计划](plans/WEEK2_BUILD_PLAN.md)
+- [Week3 构建计划](plans/WEEK3_BUILD_PLAN.md)
 
 ## 验收记录
 
 - [Version 1 验收记录](acceptance/VERSION_1_ACCEPTANCE.md)
+- [Version 1.1 验收计划](acceptance/VERSION_1_1_ACCEPTANCE.md)
+- [Version 1.2 验收计划](acceptance/VERSION_1_2_ACCEPTANCE.md)
 
 ## 指南
 
@@ -36,3 +39,4 @@
 - [ADR-0002 Monorepo 策略](decisions/ADR-0002-monorepo-strategy.md)
 - [ADR-0003 共享 API 模型](decisions/ADR-0003-shared-api-models.md)
 - [ADR-0004 GitHub 与 AI 协作安全](decisions/ADR-0004-github-and-ai-collaboration.md)
+- [ADR-0005 案例、练习、班级发布与作业模型](decisions/ADR-0005-case-exercise-release-assignment-model.md)

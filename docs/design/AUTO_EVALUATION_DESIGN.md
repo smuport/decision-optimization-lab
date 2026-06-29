@@ -15,17 +15,22 @@
 | 启发式算法题 | TSP 模拟退火、遗传算法 | 路线合法性、目标值、GAP、运行时间、收敛曲线 | 参数调优解释、结果分析 |
 | 理解分析题 | 对偶问题、灵敏度分析 | 客观题或结构化答案可自动评分 | 主观分析必须保留教师评分 |
 
-因此评测引擎需要支持“案例插件”而不是统一硬编码。每个案例至少包含：
+因此评测引擎需要支持“练习插件”而不是统一硬编码。Case 只保存通用教学内容，实际评测契约归属 Exercise：
 
 ```text
 case_manifest.json
-template.py
-validator.py
-rubric.json
-datasets/public/*.json
-datasets/hidden/*.json
-reference_solution.py  # 可选，教师可见
+README.md
+exercises/<exercise_code>/
+├── exercise_manifest.json
+├── template.py
+├── validator.py
+├── rubric.json
+├── datasets/public/*.json
+├── datasets/hidden/*.json
+└── reference_solution.py  # 可选，教师可见
 ```
+
+`case_manifest.json` 只描述 Case 元数据和内容入口。`exercise_manifest.json` 描述 `exerciseCode`、`entrypoint`、`outputSchema`、数据集、模板、validator 和 rubric 路径。
 
 ### 0.1 标准提交接口
 
@@ -100,6 +105,40 @@ python solution.py --input /data/data_small.json --output /output/result.json
 | case_16 | TSP 模拟退火 | 路线排列合法性、目标值、GAP、运行时间、收敛数据格式 |
 
 只有当这 3 类评测契约稳定后，再批量扩展到其他案例。
+
+### 0.4 数值比较容差
+
+精确建模题不得直接使用单一固定小数位或严格相等比较浮点结果。case01 的约束可行性、目标值一致性和最优性判断统一使用绝对容差与相对容差：
+
+```text
+absolute tolerance = 1e-6
+relative tolerance = 1e-5
+```
+
+容差由案例 `rubric.json` 的 `numeric_tolerance` 配置。比较目标值时使用绝对与相对容差共同判断；比较资源上限时按 `max(abs_tol, rel_tol * max(1, abs(limit)))` 缩放。该口径允许正常的求解器浮点误差和四位小数输出，但不会放过有实际意义的约束违反。
+
+### 0.5 Week3 Exercise 评测与资源契约
+
+Runner 的长期输入改为以 Exercise 为主键：
+
+```text
+exerciseCode + datasetKey + submissionPath
+```
+
+Runner 根据 Exercise 定位 `exercise_manifest.json`、validator、rubric 和数据集，结果仍同时返回 `caseId` 与 `exerciseId`。当前仅有一个 Exercise 的 case01 可保留兼容参数，但新增 Exercise 不再只依赖 `caseCode` 定位评测器。
+
+Exercise 发布前的资源完整性检查包括：
+
+- entrypoint 已配置。
+- output schema 合法。
+- 默认模板唯一且存在。
+- 至少一个公开数据集存在。
+- active rubric 存在。
+- validator 文件存在且可加载。
+
+练习资源包只包含学生完成 Exercise 所需的说明、默认模板、公开数据集和公开 output schema。隐藏数据、validator、教师参考实现和内部评分细节不得进入下载包。
+
+> 本文后续 Docker、BullMQ、MinIO 和独立 Evaluator 章节是平台后期安全与扩展参考，不属于 Week3 实施范围。Week3 继续由 NestJS runner-adapter 同步调用本地 runner。
 
 ## 一、系统架构
 

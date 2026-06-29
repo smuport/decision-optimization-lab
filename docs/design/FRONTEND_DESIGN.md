@@ -25,8 +25,8 @@
 |------|----------|----------|
 | 登录页 | 学号登录、首次激活 | 忘记密码、第三方登录 |
 | 课程首页 | 当前课程、实验任务、截止时间 | 多课程切换 |
-| 案例详情 | Markdown、公式、数据、模板 | 富交互知识图谱 |
-| 实验工作区 | 代码编辑/上传、运行结果、日志、报告入口 | 多文件工程、协同编辑 |
+| 案例详情 | 案例内容、本班已发布练习摘要 | 富交互知识图谱 |
+| 实验工作区 | Assignment 状态、练习资源、代码编辑、运行结果、日志 | 多文件工程、协同编辑 |
 | 提交详情 | 各数据集结果、错误诊断、可视化 | 代码 diff、历史对比 |
 | 教师面板 | 进度、通过率、提交列表、补评分 | 排行榜、错误聚类图 |
 
@@ -66,6 +66,52 @@ MVP 前端优先考虑高频课堂操作：
 
 排行榜、主题切换、头像、复杂通知中心等功能可以后置。
 
+### 0.5 Week3 管理控制面与学生可见性
+
+Week3 前端按角色拆分入口：
+
+```text
+ADMIN
+├── /admin/cases
+├── /admin/cases/new
+├── /admin/cases/:caseId
+└── /admin/exercises/:exerciseId
+
+TEACHER
+├── /teacher/sections/:sectionId
+├── /teacher/sections/:sectionId/cases
+├── /teacher/sections/:sectionId/assignments
+├── /teacher/assignments/new
+└── /teacher/assignments/:assignmentId/edit
+
+STUDENT
+├── /cases/:caseId
+├── /assignments/:assignmentId/workspace
+└── /submissions/:submissionId
+```
+
+ADMIN 案例管理包含元数据、状态、预览和 Exercise 列表。Exercise 管理包含元数据、状态、资源完整性检查和学生视角预览；Week3 不在线编辑模板、数据、rubric 或 validator 文件。
+
+教师班级详情使用三个 Tab：
+
+```text
+学生名单 | 可见案例 | 已发布作业
+```
+
+- “可见案例”从 PUBLISHED Case 目录选择，支持发布、可见时间、排序和归档。
+- “已发布作业”只能从该班已发布 Case 下的 PUBLISHED Exercise 中选择。
+- 发布前展示 Exercise 资源检查；检查失败时明确列出缺失项并禁用发布。
+- 创建 Assignment 时允许同一个 Exercise 在同一教学班不同周期重复发布。
+
+学生页面只消费 `/me/cases` 和 `/me/assignments`：
+
+- 未通过 SectionCaseRelease 发布的 Case 完全不可见。
+- Case 已发布但没有 Assignment 时只能阅读案例。
+- 只有本班 Assignment 对应的 Exercise 才显示工作区和练习资源下载入口。
+- Assignment 关闭后保留案例、历史提交和成绩入口。
+
+Workspace 唯一学生入口为 `/assignments/:assignmentId/workspace`。页面先读取 Assignment 权限、计算状态和 Exercise，再加载模板、公开数据集与练习资源。草稿 key 使用 `decision-lab.workspace.draft:{userId}:{assignmentId}`。
+
 ## 一、页面架构
 
 ### 1.1 整体布局
@@ -92,18 +138,16 @@ MVP 前端优先考虑高频课堂操作：
 | 路由 | 页面 | 说明 | 懒加载 |
 |------|------|------|--------|
 | `/auth/login` | 登录页 | 学号+密码登录 | ❌ |
-| `/auth/register` | 注册页 | 学生注册 | ❌ |
-| `/dashboard` | 个人仪表盘 | 学习进度、最近提交 | ✅ |
-| `/cases` | 案例列表 | 卡片/表格视图，筛选 | ✅ |
-| `/cases/:id` | 案例详情 | 理论文档 + 数据集 + 模板 | ✅ |
-| `/cases/:id/workspace` | 实验工作区 | 在线编辑器 + 运行 + 结果 | ✅ |
-| `/submissions` | 提交记录 | 我的提交列表 | ✅ |
+| `/` | 学生课程首页 | 本班已发布案例和作业 | ❌ |
+| `/cases/:id` | 案例详情 | 本班 SectionCaseRelease 可见内容 | ✅ |
+| `/assignments/:assignmentId/workspace` | 实验工作区 | Assignment 权限、练习资源、提交和结果 | ✅ |
 | `/submissions/:id` | 提交详情 | 结果、日志、可视化 | ✅ |
-| `/leaderboard` | 排行榜 | 案例榜/总榜/周榜 | ✅ |
-| `/admin/cases` | 案例管理 | CRUD（教师） | ✅ |
-| `/admin/users` | 用户管理 | 列表、禁用、角色（教师） | ✅ |
-| `/admin/queue` | 评测队列 | 实时监控（教师） | ✅ |
-| `/profile` | 个人设置 | 修改信息、头像 | ✅ |
+| `/admin/cases` | 案例目录 | ADMIN 管理共享 Case | ✅ |
+| `/admin/cases/:id` | 案例管理 | Case 元数据、状态、预览、Exercise 列表 | ✅ |
+| `/admin/exercises/:id` | 练习管理 | 元数据、状态、资源检查和预览 | ✅ |
+| `/teacher/sections/:id` | 教学班详情 | 学生、可见案例、已发布作业 | ✅ |
+| `/teacher/assignments/new` | 新建作业 | 从本班可见 Case 选择 Exercise | ✅ |
+| `/teacher/assignments/:id/edit` | 编辑作业 | 草稿、发布、关闭和归档 | ✅ |
 
 ---
 
@@ -194,7 +238,20 @@ MVP 前端优先考虑高频课堂操作：
 └────────────────────────────────────────────────────────────┘
 ```
 
-### 2.4 实验工作区 (/cases/:id/workspace) — 核心页面
+### 2.4 实验工作区 (/assignments/:assignmentId/workspace) — 核心页面
+
+Week2 实际路由 `/exercises/:exerciseId/workspace` 在 Week3 被 Assignment-centric 路由替代。编辑器继续使用 `<textarea>`，不引入 Monaco。
+
+MVP 行为要求：
+
+- 页面先加载当前学生可见的 Assignment，再加载其 Exercise、默认模板和公开数据集列表。
+- 中间代码区默认填入 `GET /api/v1/exercises/:id/template` 返回的模板内容。
+- 草稿自动保存到 `localStorage`，key 固定为 `decision-lab.workspace.draft:{userId}:{assignmentId}`。
+- 提供“重置为模板”操作。
+- 数据集选择来自公开数据集列表，默认选择 `small`。
+- 提供练习资源包下载入口；只有本班已发布 Assignment 才显示。
+- 提交后展示 status、score、objective、optimalObjective、gap、messages，并提供提交详情入口。
+- 报告入口只做占位，不进入完整报告编辑。
 
 ```
 ┌────────────────────────────────────────────────────────────┐
@@ -260,6 +317,17 @@ MVP 前端优先考虑高频课堂操作：
 
 ### 2.5 提交详情页 (/submissions/:id)
 
+Week2 提交详情页聚焦结构化反馈，不做代码 diff、历史对比或复杂可视化。
+
+MVP 行为要求：
+
+- 展示状态、分数、提交时间、attemptNumber、是否迟交。
+- 展示 objective、optimalObjective、gap、messages。
+- 展示 metrics/artifacts 的 JSON 摘要或简洁键值摘要。
+- 使用 `codeText` 只读回显本次提交代码。
+- 报告入口只做占位。
+- 提供返回工作区或课程首页的导航。
+
 ```
 ┌────────────────────────────────────────────────────────────┐
 │ 提交详情 #sub-1234    状态: ✅ 已完成  得分: 85.5           │
@@ -295,6 +363,31 @@ MVP 前端优先考虑高频课堂操作：
 │                                                            │
 └────────────────────────────────────────────────────────────┘
 ```
+
+### 2.6 教师面板 (/teacher)
+
+Week2 教师面板只做最小班级视图：
+
+- 从 `GET /api/v1/terms/current/sections` 读取当前学期教学班，默认选择第一个 section。
+- 使用 `GET /api/v1/teacher/sections/:id/progress` 展示 enrollmentCount、submissionCount、successCount、passRate、averageScore 和作业摘要。
+- 使用 `GET /api/v1/teacher/assignments/:id/submissions` 展示提交列表。
+- 提交列表记录可跳转到 `/submissions/:submissionId`。
+- 人工评分入口只做占位，不实现完整人工评分流程。
+
+HTTP Authorization interceptor、全局错误提示和 404 页面作为后续增强；如果 Day7 时间允许可以补充，但不作为 Week2 必达条件。
+
+### 2.7 Week3 Day2 认证与角色路由实施状态
+
+Week3 已实现 HTTP Authorization interceptor、启动时 `/auth/me` 登录恢复、401 自动清理、角色路由守卫和 401/403/404 状态页：
+
+- 未登录访问业务页面跳转 `/auth/login?returnUrl=...`。
+- STUDENT 默认进入 `/`，只能进入课程、案例、工作区和自己的提交页面。
+- TEACHER 默认进入 `/teacher`，导航只显示教学班管理。
+- ADMIN 默认进入 `/admin/cases`，导航只显示内容管理。
+- 错误角色访问受保护路由进入 `/forbidden`；returnUrl 只允许留在当前角色路由范围，拒绝跨角色和 `//` 外部路径。
+- 练习资源包通过 Angular HttpClient 下载，确保 Bearer token 随请求发送，不再使用无法携带 Authorization 的普通下载链接。
+
+Day2 提供 `/admin/cases` 的角色入口壳；完整 Case 管理页面属于 Day3。
 
 ---
 
@@ -559,6 +652,8 @@ export const routes: Routes = [
 ```
 
 ### 子路由详情
+
+> 下列旧 `cases.routes.ts`、排行榜、队列和通用 OJ 管理路由为历史参考。Week3 当前路由以 0.5 为准，`/cases/:id/workspace` 不再实施。
 
 ```typescript
 // cases.routes.ts

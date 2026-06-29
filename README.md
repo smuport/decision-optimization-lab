@@ -6,6 +6,12 @@
 > **课程**: 工程系统决策与优化（研究生）
 > **案例覆盖**: case_01 ~ case_18，共 18 个实验案例
 
+## 当前版本
+
+Week2 MVP（Version 1.1）已完成学生与教师最小教学闭环：课程首页、case01 教学指南、实验工作区、同步自动评测、提交详情和教师进度面板。当前仍是本地教学试运行版本，鉴权、报告和人工评分保留为后续入口。
+
+Week3 已完成设计，下一步建设 ADMIN 案例/练习目录、TEACHER 教学班案例发布与作业管理，以及 STUDENT 严格班级可见性。Week3 继续使用 case01，不扩展其他案例。
+
 ---
 
 ## 重要修订说明
@@ -27,6 +33,8 @@
 - `docs/plans/WEEK1_BUILD_PLAN.md`：第一周 1.0 Demo 构建计划
 - `docs/acceptance/VERSION_1_ACCEPTANCE.md`：第一周 1.0 验收记录
 - `docs/plans/WEEK2_BUILD_PLAN.md`：下周真实系统骨架建设计划
+- `docs/plans/WEEK3_BUILD_PLAN.md`：案例、练习、班级可见性与作业管理计划
+- `docs/acceptance/VERSION_1_2_ACCEPTANCE.md`：Week3 管理控制面验收计划
 
 ## 快速启动
 
@@ -56,24 +64,34 @@ pnpm dev:app
 
 默认地址：
 
-- 前端：`http://localhost:4200`
-- 后端健康检查：`http://localhost:3000/api/v1/health`
+- 前端：`http://localhost:4300`
+- 后端健康检查：`http://localhost:3002/api/v1/health`
 
 如果本机已有服务占用端口：
 
 ```bash
-FRONTEND_PORT=4201 BACKEND_PORT=3001 pnpm dev:app
+FRONTEND_PORT=4301 BACKEND_PORT=3003 pnpm dev:app
 ```
 
 Codex 沙箱内启动 dev server 或访问 localhost 可能需要按需审批；本地终端可直接执行上述命令。
+
+Version 1.1 主要页面：
+
+- `/`：当前课程与实验任务
+- `/cases/case_01`：case01 教学指南与资源包
+- `/exercises/exercise-case01-production-planning/workspace`：代码提交工作区
+- `/submissions/:submissionId`：提交详情与结构化反馈
+- `/teacher`：班级进度、平均分和提交列表
+
+详细验收结果见 `docs/acceptance/VERSION_1_1_ACCEPTANCE.md`。
 
 ## 一、项目概述
 
 本实验平台是《工程系统决策与优化》课程的配套在线实验系统，支持学生：
 
 - **理论学习**：在线阅读数学建模入门、PuLP 编程入门、各案例理论文档
-- **数据下载**：下载各案例的小/中/大规模数据集
-- **代码框架下载**：获取各案例的代码基础框架（Python 空函数 + 测试接口）
+- **数据下载**：下载已发布练习的小/中/大规模公开数据集
+- **代码框架下载**：获取已发布练习的代码基础框架（Python 空函数 + 测试接口）
 - **在线实验**：上传 Python 代码，后台按案例评测规则运行公开/隐藏算例
 - **成绩评测**：根据可行性、目标值、GAP、运行时间、鲁棒性、实验报告等综合评分
 - **教学反馈**：教师查看班级进度、常见错误、提交记录和报告质量
@@ -277,24 +295,24 @@ cd decision-optimization-lab
 chmod +x setup.sh
 ./setup.sh
 
-# 3. 启动所有服务
-docker compose up -d
+# 3. 启动 PostgreSQL 并初始化
+pnpm db:up
+pnpm --filter backend exec prisma db push --schema prisma/schema.prisma
+pnpm --filter backend prisma:seed
 
-# 4. 检查服务状态
-make status
+# 4. 启动前后端
+pnpm dev:app
 ```
 
 ### 服务端口映射
 
 | 服务 | 端口 | 说明 |
 |------|------|------|
-| 前端 (Angular) | 4200 | 开发服务器 |
-| 后端 (NestJS) | 3000 | REST API + Swagger |
-| 数据库 (PostgreSQL) | 5432 | 开发暴露 |
-| 缓存 (Redis) | 6379 | 开发暴露 |
-| 对象存储 (MinIO) | 9000 / 9001 | API / Console |
-| 评测沙箱 (Evaluator) | 8000 | 内部 API |
-| Nginx (生产) | 80 / 443 | 反向代理 |
+| 前端 (Angular) | 4300 | 开发服务器 |
+| 后端 (NestJS) | 3002 | REST API |
+| 数据库 (PostgreSQL) | 55432 | Docker Compose 开发端口 |
+
+Week2 不启动 Redis、BullMQ、MinIO、独立 Evaluator 或 Nginx；本地 runner 由 NestJS 同步调用。
 
 ---
 

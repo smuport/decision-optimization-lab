@@ -4,7 +4,22 @@
 
 ---
 
-## 1. Non-Negotiable Week2 Scope
+## 1. Non-Negotiable Current Scope
+
+### 1.1 Week3 management control plane
+
+Week3 is case01-only and implements:
+
+- ADMIN Case/Exercise metadata, status, preview, and resource-readiness management.
+- TEACHER management of owned ClassSection case releases and Assignments.
+- STUDENT visibility derived from ACTIVE Enrollment and PUBLISHED SectionCaseRelease.
+- Exercise-owned templates, datasets, rubric, validator, output schema, and resource package.
+- Assignment-centric workspace, resource authorization, and submission access.
+- Week2 history compatibility.
+
+Week3 does not implement new cases, online template/dataset/rubric/validator editing, full reports/manual grading, queues, object storage, WebSocket, Monaco, Docker sandbox, leaderboard, or production deployment.
+
+### 1.2 Completed Week2 scope
 
 Week2 builds a usable MVP platform skeleton, not the full online judge.
 
@@ -93,6 +108,14 @@ Important Week2 route:
 ```text
 POST /api/v1/assignments/:id/submissions
 ```
+
+Week3 adds these ownership rules:
+
+- Case and Exercise are shared course assets managed by ADMIN.
+- SectionCaseRelease controls Case reading visibility for one ClassSection.
+- Assignment publishes one Exercise to one ClassSection.
+- Students use current-user `/me/cases` and `/me/assignments`; do not expose all Exercises.
+- Exercise owns the resource package, but student download requires an authorized Assignment.
 
 Do not replace it with:
 
@@ -183,7 +206,7 @@ When implementation changes design or scope, update documents immediately:
 - Project structure change: `docs/design/PROJECT_STRUCTURE.md`
 - API change: `docs/design/BACKEND_API_DESIGN.md`
 - Database change: `docs/design/DATABASE_DESIGN.md`
-- Plan change: `docs/plans/WEEK2_BUILD_PLAN.md`
+- Current phase plan change: `docs/plans/WEEK3_BUILD_PLAN.md`
 - Current state change: `docs/PROJECT_STATE.md`
 - New major decision: `docs/decisions/ADR-xxxx-*.md`
 
