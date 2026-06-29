@@ -1,10 +1,12 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { finalize } from 'rxjs';
-import type { UserDto } from '@decision-lab/shared';
-import { ApiClientService, type AuthLoginRequest } from './api-client.service';
+import { firstValueFrom, finalize } from 'rxjs';
+import type { AuthLoginRequest, UserDto } from '@decision-lab/shared';
+import { ApiClientService } from './api-client.service';
+import { homePathForRole } from './auth-policy';
 
-const ACCESS_TOKEN_KEY = 'decision-lab.access-token';
-const USER_KEY = 'decision-lab.user';
+export const ACCESS_TOKEN_KEY = 'decision-lab.access-token';
+export const USER_KEY = 'decision-lab.user';
+export const AUTH_UNAUTHORIZED_EVENT = 'decision-lab:unauthorized';
 
 @Injectable({ providedIn: 'root' })
 export class AuthStateService {
@@ -12,10 +14,35 @@ export class AuthStateService {
   private readonly userSignal = signal<UserDto | null>(this.readUser());
   private readonly tokenSignal = signal<string | null>(this.readStorage(ACCESS_TOKEN_KEY));
   readonly loading = signal(false);
+  readonly ready = signal(false);
   readonly error = signal<string | null>(null);
   readonly user = this.userSignal.asReadonly();
   readonly token = this.tokenSignal.asReadonly();
   readonly isAuthenticated = computed(() => Boolean(this.userSignal() && this.tokenSignal()));
+
+  constructor() {
+    if (typeof window !== 'undefined') {
+      window.addEventListener(AUTH_UNAUTHORIZED_EVENT, () => this.logout());
+    }
+  }
+
+  async restore() {
+    if (!this.tokenSignal()) {
+      this.userSignal.set(null);
+      this.ready.set(true);
+      return;
+    }
+
+    try {
+      const user = await firstValueFrom(this.api.me());
+      this.userSignal.set(user);
+      this.writeStorage(USER_KEY, JSON.stringify(user));
+    } catch {
+      this.logout();
+    } finally {
+      this.ready.set(true);
+    }
+  }
 
   login(body: AuthLoginRequest) {
     this.loading.set(true);
@@ -42,6 +69,10 @@ export class AuthStateService {
 
   setError(message: string) {
     this.error.set(message);
+  }
+
+  homePath() {
+    return homePathForRole(this.userSignal()?.role);
   }
 
   private readUser() {

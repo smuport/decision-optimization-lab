@@ -1,12 +1,9 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin, of, switchMap } from 'rxjs';
-import {
-  ApiClientService,
-  type DatasetDownloadInfo,
-  type ExerciseDetail,
-  type ExerciseListItem,
-} from '../../core/api-client.service';
+import type { DatasetDownloadInfo, ExerciseDetail, ExerciseListItem } from '@decision-lab/shared';
+import { ApiClientService } from '../../core/api-client.service';
+import { saveDownload } from '../../core/file-download';
 import {
   CASE_01_CONTENT,
   CASE_SUMMARIES,
@@ -115,7 +112,7 @@ import {
                       <h3>下载模板和公开数据集</h3>
                       <p>{{ case01.resourcePackage.description }}</p>
                     </div>
-                    <a class="primary-button" [href]="resourcePackagePath()">下载本案例资源包</a>
+                    <button class="primary-button" type="button" (click)="downloadResources()">下载练习资源包</button>
                   </section>
 
                   <div class="resource-list">
@@ -175,7 +172,7 @@ import {
                         下面代码与 small 数据集中的利润和资源约束一致，可作为学生理解 PuLP 建模语法的最小样例。
                       </p>
                     </div>
-                    <a class="secondary-button" [href]="resourcePackagePath()">下载资源包</a>
+                    <button class="secondary-button" type="button" (click)="downloadResources()">下载练习资源包</button>
                   </div>
 
                   <pre class="code-block"><code>{{ case01.pulpCode }}</code></pre>
@@ -202,7 +199,7 @@ import {
                       <p class="section-kicker">提交实验</p>
                       <h2>提交前检查输入、输出与评分规则</h2>
                       <p>
-                        Day6 将实现在线工作区和真实提交页面；Day5 先把进入工作区的路径、输出结构和评分理解准备好。
+                        在线工作区已接入模板、草稿保存、数据集选择和真实评测，可在提交前先核对输出结构与评分规则。
                       </p>
                     </div>
                     @if (exerciseDetail()?.id) {
@@ -373,9 +370,13 @@ export class CaseDetailComponent implements OnInit {
     return this.exerciseDetail()?.template?.filename ?? 'template.py';
   }
 
-  protected resourcePackagePath() {
+  protected downloadResources() {
     const id = this.exerciseDetail()?.id;
-    return id ? `/api/v1/exercises/${id}/resources/download` : '#';
+    if (!id) return;
+    this.api.exerciseResources(id).subscribe({
+      next: (blob) => saveDownload(blob, `${this.currentCaseId() ?? 'exercise'}-resources.zip`),
+      error: () => this.error.set('练习资源包下载失败。'),
+    });
   }
 
   private currentCaseId() {

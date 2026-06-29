@@ -1,11 +1,8 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
-import {
-  ApiClientService,
-  type CurrentCourseResponse,
-  type ExerciseListItem,
-} from '../../core/api-client.service';
+import type { CurrentCourseResponse, ExerciseListItem } from '@decision-lab/shared';
+import { ApiClientService } from '../../core/api-client.service';
 import { AuthStateService } from '../../core/auth-state.service';
 
 @Component({

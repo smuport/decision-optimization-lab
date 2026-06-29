@@ -3,109 +3,22 @@ import { Injectable, inject } from '@angular/core';
 import { map } from 'rxjs';
 import type {
   ApiResponse,
-  DatasetDto,
+  AuthLoginRequest,
+  AuthLoginResponse,
+  CurrentCourseResponse,
+  CurrentSectionsResponse,
+  DatasetDownloadInfo,
+  ExerciseDetail,
+  ExerciseListItem,
   RunResultDto,
+  SubmissionCreateRequest,
+  SubmissionCreateResponse,
+  SubmissionDetailResponse,
+  TeacherProgressResponse,
+  TeacherSubmissionListItem,
   TemplateDto,
   UserDto,
 } from '@decision-lab/shared';
-
-export interface AuthLoginRequest {
-  studentNo?: string;
-  email?: string;
-  password?: string;
-}
-
-export interface AuthLoginResponse {
-  user: UserDto;
-  tokens: {
-    accessToken: string;
-    refreshToken: string;
-    expiresIn: number;
-  };
-}
-
-export interface CurrentCourseResponse {
-  id: string;
-  code: string;
-  name: string;
-  description?: string;
-  currentTerm?: {
-    id: string;
-    name: string;
-    startsAt?: string;
-    endsAt?: string;
-    sections: CourseSectionSummary[];
-  };
-}
-
-export interface CourseSectionSummary {
-  id: string;
-  name: string;
-  assignments: CourseAssignmentSummary[];
-}
-
-export interface CourseAssignmentSummary {
-  id: string;
-  title: string;
-  dueAt?: string;
-  exercise: {
-    id: string;
-    title: string;
-    caseCode: string;
-    caseTitle: string;
-  };
-}
-
-export interface ExerciseListItem {
-  id: string;
-  title: string;
-  kind: string;
-  entrypoint?: string;
-  case: {
-    id: string;
-    code: string;
-    title: string;
-    subtitle?: string;
-    difficulty: string;
-    knowledgePoints: string[];
-  };
-  assignment?: {
-    id: string;
-    title: string;
-    dueAt?: string;
-  };
-  datasets: Array<Pick<DatasetDto, 'id' | 'key' | 'label' | 'visibility'>>;
-}
-
-export interface ExerciseDetail extends ExerciseListItem {
-  outputSchema?: Record<string, unknown>;
-  guide?: Record<string, unknown>;
-  case: ExerciseListItem['case'] & {
-    summary?: string;
-  };
-  assignment?: ExerciseListItem['assignment'] & {
-    maxAttempts?: number;
-  };
-  datasets: Array<Pick<DatasetDto, 'id' | 'key' | 'label' | 'visibility' | 'sortOrder'>>;
-  template?: Pick<TemplateDto, 'id' | 'filename' | 'language'>;
-  rubric?: {
-    id: string;
-    version: number;
-    totalScore: number;
-    rules: Record<string, unknown>[];
-  };
-}
-
-export interface DatasetDownloadInfo extends Pick<DatasetDto, 'id' | 'key' | 'label' | 'visibility'> {
-  path?: string;
-}
-
-export interface SubmissionCreateResponse {
-  submissionId: string;
-  status: string;
-  statusUrl: string;
-  resultUrl: string;
-}
 
 @Injectable({ providedIn: 'root' })
 export class ApiClientService {
@@ -140,12 +53,34 @@ export class ApiClientService {
     return this.get<DatasetDownloadInfo[]>(`exercises/${id}/datasets`);
   }
 
-  createSubmission(assignmentId: string, body: { code: string; datasetKey?: string }) {
+  exerciseResources(id: string) {
+    return this.http.get(`${this.baseUrl}/exercises/${id}/resources/download`, {
+      responseType: 'blob',
+    });
+  }
+
+  createSubmission(assignmentId: string, body: SubmissionCreateRequest) {
     return this.post<SubmissionCreateResponse>(`assignments/${assignmentId}/submissions`, body);
+  }
+
+  submission(id: string) {
+    return this.get<SubmissionDetailResponse>(`submissions/${id}`);
   }
 
   submissionResult(id: string) {
     return this.get<RunResultDto>(`submissions/${id}/results`);
+  }
+
+  currentSections() {
+    return this.get<CurrentSectionsResponse>('terms/current/sections');
+  }
+
+  teacherProgress(sectionId: string) {
+    return this.get<TeacherProgressResponse>(`teacher/sections/${sectionId}/progress`);
+  }
+
+  teacherSubmissions(assignmentId: string) {
+    return this.get<TeacherSubmissionListItem[]>(`teacher/assignments/${assignmentId}/submissions`);
   }
 
   private get<T>(path: string) {
