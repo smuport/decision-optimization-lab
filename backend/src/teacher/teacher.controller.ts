@@ -1,19 +1,26 @@
-import { Body, Controller, Get, Param, Patch } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, Patch } from '@nestjs/common';
+import { CurrentUser, Roles } from '../auth/auth.decorators';
+import { SectionAccessService } from '../auth/section-access.service';
+import type { CurrentUserData } from '../auth/auth.types';
 import { ok } from '../common/api-response';
 import { PrismaService } from '../prisma/prisma.service';
 
 type ManualGradeBody = {
-  graderId?: string;
   scoreDelta?: number;
   comment?: string;
 };
 
 @Controller('teacher')
+@Roles('TEACHER')
 export class TeacherController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly access: SectionAccessService,
+  ) {}
 
   @Get('sections/:id/progress')
-  async progress(@Param('id') sectionId: string) {
+  async progress(@Param('id') sectionId: string, @CurrentUser() user: CurrentUserData) {
+    await this.access.assertSectionAccess(user, sectionId);
     const section = await this.prisma.classSection.findUniqueOrThrow({
       where: { id: sectionId },
       include: {
@@ -43,6 +50,13 @@ export class TeacherController {
         sum + assignment.submissions.filter((submission) => submission.status === 'SUCCESS').length,
       0,
     );
+    const scores = section.assignments.flatMap((assignment) =>
+      assignment.submissions.flatMap((submission) =>
+        submission.runResult?.score === null || submission.runResult?.score === undefined
+          ? []
+          : [submission.runResult.score],
+      ),
+    );
 
     return ok({
       section: {
@@ -54,20 +68,31 @@ export class TeacherController {
       submissionCount,
       successCount,
       passRate: submissionCount > 0 ? successCount / submissionCount : 0,
-      assignments: section.assignments.map((assignment) => ({
-        id: assignment.id,
-        title: assignment.title,
-        exerciseTitle: assignment.exercise.title,
-        caseCode: assignment.exercise.case.code,
-        submissionCount: assignment.submissions.length,
-        successCount: assignment.submissions.filter((submission) => submission.status === 'SUCCESS')
-          .length,
-      })),
+      averageScore: this.average(scores),
+      assignments: section.assignments.map((assignment) => {
+        const assignmentScores = assignment.submissions.flatMap((submission) =>
+          submission.runResult?.score === null || submission.runResult?.score === undefined
+            ? []
+            : [submission.runResult.score],
+        );
+
+        return {
+          id: assignment.id,
+          title: assignment.title,
+          exerciseTitle: assignment.exercise.title,
+          caseCode: assignment.exercise.case.code,
+          submissionCount: assignment.submissions.length,
+          successCount: assignment.submissions.filter((submission) => submission.status === 'SUCCESS')
+            .length,
+          averageScore: this.average(assignmentScores),
+        };
+      }),
     });
   }
 
   @Get('assignments/:id/submissions')
-  async submissions(@Param('id') assignmentId: string) {
+  async submissions(@Param('id') assignmentId: string, @CurrentUser() user: CurrentUserData) {
+    await this.access.assertAssignmentAccess(user, assignmentId);
     const submissions = await this.prisma.submission.findMany({
       where: { assignmentId },
       orderBy: { submittedAt: 'desc' },
@@ -100,17 +125,22 @@ export class TeacherController {
   }
 
   @Patch('submissions/:id/manual-grade')
-  async manualGrade(@Param('id') submissionId: string, @Body() body: ManualGradeBody) {
-    const teacher =
-      body.graderId !== undefined
-        ? await this.prisma.user.findUniqueOrThrow({ where: { id: body.graderId } })
-        : await this.prisma.user.findFirstOrThrow({
-            where: { email: 'teacher.demo@decision-lab.local' },
-          });
+  async manualGrade(
+    @Param('id') submissionId: string,
+    @Body() body: ManualGradeBody & { graderId?: unknown },
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    if (body.graderId !== undefined) {
+      throw new BadRequestException({
+        code: 1001,
+        message: 'graderId 由当前登录用户确定，不允许通过请求体传入',
+      });
+    }
+    await this.access.assertSubmissionAccess(user, submissionId);
     const grade = await this.prisma.manualGrade.create({
       data: {
         submissionId,
-        graderId: teacher.id,
+        graderId: user.id,
         scoreDelta: body.scoreDelta ?? 0,
         comment: body.comment,
       },
@@ -128,5 +158,12 @@ export class TeacherController {
       '人工评分入口已预留',
     );
   }
-}
 
+  private average(values: number[]) {
+    if (values.length === 0) {
+      return 0;
+    }
+
+    return Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 100) / 100;
+  }
+}

@@ -1,22 +1,29 @@
 import { Body, Controller, Param, Post } from '@nestjs/common';
+import { CurrentUser, Roles } from '../auth/auth.decorators';
+import { SectionAccessService } from '../auth/section-access.service';
+import type { CurrentUserData } from '../auth/auth.types';
 import { ok } from '../common/api-response';
 import { PrismaService } from '../prisma/prisma.service';
 
 type ReportBody = {
   content?: string;
-  authorId?: string;
 };
 
 @Controller('submissions')
+@Roles('STUDENT')
 export class ReportsController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly access: SectionAccessService,
+  ) {}
 
   @Post(':id/report')
-  async createOrUpdate(@Param('id') submissionId: string, @Body() body: ReportBody) {
-    const submission = await this.prisma.submission.findUniqueOrThrow({
-      where: { id: submissionId },
-    });
-    const authorId = body.authorId ?? submission.userId;
+  async createOrUpdate(
+    @Param('id') submissionId: string,
+    @Body() body: ReportBody,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    await this.access.assertSubmissionAccess(user, submissionId);
     const report = await this.prisma.report.upsert({
       where: { submissionId },
       update: {
@@ -25,7 +32,7 @@ export class ReportsController {
       },
       create: {
         submissionId,
-        authorId,
+        authorId: user.id,
         content: body.content ?? '',
         status: 'DRAFT',
       },
@@ -45,4 +52,3 @@ export class ReportsController {
     );
   }
 }
-

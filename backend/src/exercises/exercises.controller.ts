@@ -1,4 +1,7 @@
 import { Controller, Get, Param, Res } from '@nestjs/common';
+import { CurrentUser, Roles } from '../auth/auth.decorators';
+import { SectionAccessService } from '../auth/section-access.service';
+import type { CurrentUserData } from '../auth/auth.types';
 import { ok } from '../common/api-response';
 import { PrismaService } from '../prisma/prisma.service';
 import { ResourcePackageService } from './resource-package.service';
@@ -13,15 +16,18 @@ export class ExercisesController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly resourcePackage: ResourcePackageService,
+    private readonly access: SectionAccessService,
   ) {}
 
+  @Roles('STUDENT', 'TEACHER', 'ADMIN')
   @Get()
-  async list() {
+  async list(@CurrentUser() user: CurrentUserData) {
     const exercises = await this.prisma.exercise.findMany({
+      where: this.accessibleWhere(user),
       orderBy: [{ sortOrder: 'asc' }, { title: 'asc' }],
       include: {
         case: true,
-        assignments: true,
+        assignments: { where: this.accessibleAssignmentsWhere(user) },
         datasets: {
           where: { visibility: 'PUBLIC' },
           orderBy: { sortOrder: 'asc' },
@@ -60,8 +66,10 @@ export class ExercisesController {
     );
   }
 
+  @Roles('STUDENT', 'TEACHER', 'ADMIN')
   @Get(':id')
-  async detail(@Param('id') id: string) {
+  async detail(@Param('id') id: string, @CurrentUser() user: CurrentUserData) {
+    await this.access.assertExerciseAccess(user, id);
     const exercise = await this.prisma.exercise.findUniqueOrThrow({
       where: { id },
       include: {
@@ -78,7 +86,7 @@ export class ExercisesController {
           where: { isActive: true },
           take: 1,
         },
-        assignments: true,
+        assignments: { where: this.accessibleAssignmentsWhere(user) },
       },
     });
 
@@ -131,8 +139,10 @@ export class ExercisesController {
     });
   }
 
+  @Roles('STUDENT', 'TEACHER', 'ADMIN')
   @Get(':id/datasets')
-  async datasets(@Param('id') id: string) {
+  async datasets(@Param('id') id: string, @CurrentUser() user: CurrentUserData) {
+    await this.access.assertExerciseAccess(user, id);
     const datasets = await this.prisma.dataset.findMany({
       where: {
         exerciseId: id,
@@ -152,8 +162,10 @@ export class ExercisesController {
     );
   }
 
+  @Roles('STUDENT', 'TEACHER', 'ADMIN')
   @Get(':id/template')
-  async template(@Param('id') id: string) {
+  async template(@Param('id') id: string, @CurrentUser() user: CurrentUserData) {
+    await this.access.assertExerciseAccess(user, id);
     const template = await this.prisma.template.findFirstOrThrow({
       where: {
         exerciseId: id,
@@ -171,13 +183,49 @@ export class ExercisesController {
     });
   }
 
+  @Roles('STUDENT', 'TEACHER', 'ADMIN')
   @Get(':id/resources/download')
-  async downloadResources(@Param('id') id: string, @Res() response: DownloadResponse) {
+  async downloadResources(
+    @Param('id') id: string,
+    @Res() response: DownloadResponse,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    await this.access.assertExerciseAccess(user, id);
     const resources = await this.resourcePackage.buildExerciseResources(id);
 
     response.setHeader('Content-Type', 'application/zip');
     response.setHeader('Content-Disposition', `attachment; filename="${resources.filename}"`);
     response.setHeader('Content-Length', resources.buffer.length);
     response.send(resources.buffer);
+  }
+
+  private accessibleWhere(user: CurrentUserData) {
+    if (user.role === 'ADMIN') return {};
+    if (user.role === 'TEACHER') {
+      return {
+        case: {
+          sectionReleases: {
+            some: { status: 'PUBLISHED' as const, section: { teacherId: user.id } },
+          },
+        },
+      };
+    }
+    return {
+      assignments: {
+        some: {
+          status: 'PUBLISHED' as const,
+          section: { enrollments: { some: { userId: user.id, status: 'ACTIVE' as const } } },
+        },
+      },
+    };
+  }
+
+  private accessibleAssignmentsWhere(user: CurrentUserData) {
+    if (user.role === 'ADMIN') return {};
+    if (user.role === 'TEACHER') return { section: { teacherId: user.id } };
+    return {
+      status: 'PUBLISHED' as const,
+      section: { enrollments: { some: { userId: user.id, status: 'ACTIVE' as const } } },
+    };
   }
 }

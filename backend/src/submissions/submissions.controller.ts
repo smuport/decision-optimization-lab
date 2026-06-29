@@ -1,25 +1,31 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
-import type { SubmissionStatus } from '@decision-lab/shared';
+import { SubmissionCreateRequestSchema, type SubmissionStatus } from '@decision-lab/shared';
 import type { Prisma } from '@prisma/client';
+import { CurrentUser, Roles } from '../auth/auth.decorators';
+import { SectionAccessService } from '../auth/section-access.service';
+import type { CurrentUserData } from '../auth/auth.types';
 import { ok } from '../common/api-response';
+import { parseRequest } from '../common/request-validation';
 import { PrismaService } from '../prisma/prisma.service';
 import { RunnerAdapterService } from '../runner-adapter/runner-adapter.service';
-
-type CreateSubmissionBody = {
-  code?: string;
-  datasetKey?: string;
-  userId?: string;
-};
 
 @Controller()
 export class SubmissionsController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly runner: RunnerAdapterService,
+    private readonly access: SectionAccessService,
   ) {}
 
+  @Roles('STUDENT')
   @Post('assignments/:id/submissions')
-  async create(@Param('id') assignmentId: string, @Body() body: CreateSubmissionBody) {
+  async create(
+    @Param('id') assignmentId: string,
+    @Body() rawBody: unknown,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    const body = parseRequest(SubmissionCreateRequestSchema, rawBody);
+    await this.access.assertAssignmentAccess(user, assignmentId);
     const assignment = await this.prisma.assignment.findUniqueOrThrow({
       where: { id: assignmentId },
       include: {
@@ -30,11 +36,6 @@ export class SubmissionsController {
         },
       },
     });
-    const user = body.userId
-      ? await this.prisma.user.findUniqueOrThrow({ where: { id: body.userId } })
-      : await this.prisma.user.findFirstOrThrow({
-          where: { email: 'student.demo@decision-lab.local' },
-        });
     const attemptNumber =
       (await this.prisma.submission.count({
         where: {
@@ -42,7 +43,7 @@ export class SubmissionsController {
           userId: user.id,
         },
       })) + 1;
-    const code = body.code ?? (await this.defaultTemplate(assignment.exerciseId));
+    const code = body.code;
 
     const submission = await this.prisma.submission.create({
       data: {
@@ -102,8 +103,10 @@ export class SubmissionsController {
     );
   }
 
+  @Roles('STUDENT', 'TEACHER', 'ADMIN')
   @Get('submissions/:id')
-  async detail(@Param('id') id: string) {
+  async detail(@Param('id') id: string, @CurrentUser() user: CurrentUserData) {
+    await this.access.assertSubmissionAccess(user, id);
     const submission = await this.prisma.submission.findUniqueOrThrow({
       where: { id },
       include: {
@@ -133,6 +136,7 @@ export class SubmissionsController {
       submittedAt: submission.submittedAt.toISOString(),
       completedAt: submission.completedAt?.toISOString(),
       errorMessage: submission.errorMessage ?? undefined,
+      codeText: submission.codeText ?? undefined,
       exercise: {
         id: submission.assignment.exercise.id,
         title: submission.assignment.exercise.title,
@@ -156,23 +160,15 @@ export class SubmissionsController {
     });
   }
 
+  @Roles('STUDENT', 'TEACHER', 'ADMIN')
   @Get('submissions/:id/results')
-  async result(@Param('id') id: string) {
+  async result(@Param('id') id: string, @CurrentUser() user: CurrentUserData) {
+    await this.access.assertSubmissionAccess(user, id);
     const runResult = await this.prisma.runResult.findUniqueOrThrow({
       where: { submissionId: id },
     });
 
     return ok(this.toRunResultDto(runResult));
-  }
-
-  private async defaultTemplate(exerciseId: string): Promise<string> {
-    const template = await this.prisma.template.findFirstOrThrow({
-      where: {
-        exerciseId,
-        isDefault: true,
-      },
-    });
-    return template.content;
   }
 
   private toSubmissionStatus(status: string): SubmissionStatus {

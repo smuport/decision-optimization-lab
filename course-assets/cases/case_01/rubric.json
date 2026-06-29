@@ -2,6 +2,10 @@
   "case_id": "case_01",
   "version": 1,
   "total": 100,
+  "numeric_tolerance": {
+    "absolute": 0.000001,
+    "relative": 0.00001
+  },
   "items": [
     {
       "id": "feasibility",

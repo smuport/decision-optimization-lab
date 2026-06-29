@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import type { ApiResponse } from '@decision-lab/shared';
+import { Public } from '../auth/auth.decorators';
 
 interface HealthDto {
   status: 'ok';
@@ -7,6 +8,7 @@ interface HealthDto {
 }
 
 @Controller('health')
+@Public()
 export class HealthController {
   @Get()
   health(): ApiResponse<HealthDto> {

@@ -8,6 +8,7 @@
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down",
     "db:logs": "docker compose logs -f db",
+    "verify:week3:day1": "bash scripts/verify-week3-day1.sh",
     "build": "turbo build",
     "typecheck": "turbo typecheck",
     "test": "turbo test",

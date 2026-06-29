@@ -1,5 +1,6 @@
 import { PrismaClient, type Prisma } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { hash } from 'bcryptjs';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -167,6 +168,7 @@ async function seedCase(
       subtitle: manifest.subtitle,
       category: caseCategory(manifest.case_id, manifest.type),
       difficulty: manifest.difficulty,
+      status: 'PUBLISHED',
       knowledgePoints: manifest.knowledge_points,
       summary: manifest.subtitle,
       sortOrder,
@@ -178,6 +180,7 @@ async function seedCase(
       subtitle: manifest.subtitle,
       category: caseCategory(manifest.case_id, manifest.type),
       difficulty: manifest.difficulty,
+      status: 'PUBLISHED',
       knowledgePoints: manifest.knowledge_points,
       summary: manifest.subtitle,
       sortOrder,
@@ -186,6 +189,7 @@ async function seedCase(
 }
 
 async function main() {
+  const demoPasswordHash = await hash('DecisionLab2026!', 10);
   const course = await prisma.course.upsert({
     where: { code: 'ENGINEERING_DECISION_OPTIMIZATION' },
     update: {},
@@ -198,22 +202,85 @@ async function main() {
 
   const teacher = await prisma.user.upsert({
     where: { email: 'teacher.demo@decision-lab.local' },
-    update: { name: 'Demo Teacher', role: 'TEACHER' },
+    update: {
+      name: 'Demo Teacher',
+      role: 'TEACHER',
+      status: 'ACTIVE',
+      passwordHash: demoPasswordHash,
+    },
     create: {
       email: 'teacher.demo@decision-lab.local',
       name: 'Demo Teacher',
       role: 'TEACHER',
+      passwordHash: demoPasswordHash,
+    },
+  });
+
+  const admin = await prisma.user.upsert({
+    where: { email: 'admin.demo@decision-lab.local' },
+    update: {
+      name: 'Demo Admin',
+      role: 'ADMIN',
+      status: 'ACTIVE',
+      passwordHash: demoPasswordHash,
+    },
+    create: {
+      email: 'admin.demo@decision-lab.local',
+      name: 'Demo Admin',
+      role: 'ADMIN',
+      passwordHash: demoPasswordHash,
     },
   });
 
   const student = await prisma.user.upsert({
     where: { email: 'student.demo@decision-lab.local' },
-    update: { name: 'Demo Student', role: 'STUDENT', studentNo: 'S2026001' },
+    update: {
+      name: 'Demo Student',
+      role: 'STUDENT',
+      status: 'ACTIVE',
+      studentNo: 'S2026001',
+      passwordHash: demoPasswordHash,
+    },
     create: {
       email: 'student.demo@decision-lab.local',
       studentNo: 'S2026001',
       name: 'Demo Student',
       role: 'STUDENT',
+      passwordHash: demoPasswordHash,
+    },
+  });
+
+  const visibilityTeacher = await prisma.user.upsert({
+    where: { email: 'teacher.visibility@decision-lab.local' },
+    update: {
+      name: 'Visibility Teacher',
+      role: 'TEACHER',
+      status: 'ACTIVE',
+      passwordHash: demoPasswordHash,
+    },
+    create: {
+      email: 'teacher.visibility@decision-lab.local',
+      name: 'Visibility Teacher',
+      role: 'TEACHER',
+      passwordHash: demoPasswordHash,
+    },
+  });
+
+  const visibilityStudent = await prisma.user.upsert({
+    where: { email: 'student.visibility@decision-lab.local' },
+    update: {
+      name: 'Visibility Student',
+      role: 'STUDENT',
+      status: 'ACTIVE',
+      studentNo: 'S2026002',
+      passwordHash: demoPasswordHash,
+    },
+    create: {
+      email: 'student.visibility@decision-lab.local',
+      studentNo: 'S2026002',
+      name: 'Visibility Student',
+      role: 'STUDENT',
+      passwordHash: demoPasswordHash,
     },
   });
 
@@ -251,6 +318,21 @@ async function main() {
     },
   });
 
+  const visibilitySection = await prisma.classSection.upsert({
+    where: { id: 'section-2026-visibility-demo' },
+    update: {
+      name: '研究生课程可见性对照班',
+      teacherId: visibilityTeacher.id,
+      termId: term.id,
+    },
+    create: {
+      id: 'section-2026-visibility-demo',
+      termId: term.id,
+      name: '研究生课程可见性对照班',
+      teacherId: visibilityTeacher.id,
+    },
+  });
+
   await prisma.enrollment.upsert({
     where: {
       sectionId_userId: {
@@ -262,6 +344,21 @@ async function main() {
     create: {
       sectionId: section.id,
       userId: student.id,
+      status: 'ACTIVE',
+    },
+  });
+
+  await prisma.enrollment.upsert({
+    where: {
+      sectionId_userId: {
+        sectionId: visibilitySection.id,
+        userId: visibilityStudent.id,
+      },
+    },
+    update: { status: 'ACTIVE' },
+    create: {
+      sectionId: visibilitySection.id,
+      userId: visibilityStudent.id,
       status: 'ACTIVE',
     },
   });
@@ -278,8 +375,12 @@ async function main() {
     where: { id: 'exercise-case01-production-planning' },
     update: {
       caseId: case01.id,
+      code: 'production_planning',
       title: 'case_01 生产分配线性规划实验',
+      description: '使用 PuLP 完成生产分配线性规划建模、求解与结果解释。',
       kind: exerciseKind(manifest.type),
+      status: 'PUBLISHED',
+      assetPath: 'course-assets/cases/case_01',
       entrypoint: manifest.entrypoint,
       outputSchema: jsonValue(manifest.expected_output),
       guide: case01Guide(),
@@ -288,8 +389,12 @@ async function main() {
     create: {
       id: 'exercise-case01-production-planning',
       caseId: case01.id,
+      code: 'production_planning',
       title: 'case_01 生产分配线性规划实验',
+      description: '使用 PuLP 完成生产分配线性规划建模、求解与结果解释。',
       kind: exerciseKind(manifest.type),
+      status: 'PUBLISHED',
+      assetPath: 'course-assets/cases/case_01',
       entrypoint: manifest.entrypoint,
       outputSchema: jsonValue(manifest.expected_output),
       guide: case01Guide(),
@@ -357,37 +462,71 @@ async function main() {
     },
   });
 
-  await prisma.assignment.upsert({
+  const assignmentData = {
+    title: 'Week2 case_01 生产分配实验',
+    description: '完成生产分配模型代码并提交平台自动评测。',
+    status: 'PUBLISHED' as const,
+    opensAt: new Date('2026-06-24T08:00:00+08:00'),
+    dueAt: new Date('2026-07-01T23:59:59+08:00'),
+    maxAttempts: 10,
+    allowLate: false,
+    publishedAt: new Date('2026-06-24T08:00:00+08:00'),
+    createdById: teacher.id,
+  };
+  const existingAssignment = await prisma.assignment.findFirst({
+    where: { sectionId: section.id, exerciseId: exercise.id },
+    orderBy: { id: 'asc' },
+  });
+
+  const assignment = existingAssignment
+    ? await prisma.assignment.update({
+        where: { id: existingAssignment.id },
+        data: assignmentData,
+      })
+    : await prisma.assignment.create({
+        data: {
+          id: 'assignment-case01-production-planning-demo',
+          sectionId: section.id,
+          exerciseId: exercise.id,
+          ...assignmentData,
+        },
+      });
+
+  await prisma.sectionCaseRelease.upsert({
     where: {
-      sectionId_exerciseId: {
+      sectionId_caseId: {
         sectionId: section.id,
-        exerciseId: exercise.id,
+        caseId: case01.id,
       },
     },
     update: {
-      title: 'Week2 case_01 生产分配实验',
-      opensAt: new Date('2026-06-24T08:00:00+08:00'),
-      dueAt: new Date('2026-07-01T23:59:59+08:00'),
-      maxAttempts: 10,
-      allowLate: false,
+      status: 'PUBLISHED',
+      visibleFrom: new Date('2026-06-24T08:00:00+08:00'),
+      sortOrder: 1,
+      publishedAt: new Date('2026-06-24T08:00:00+08:00'),
+      createdById: teacher.id,
     },
     create: {
+      id: 'release-section-demo-case01',
       sectionId: section.id,
-      exerciseId: exercise.id,
-      title: 'Week2 case_01 生产分配实验',
-      opensAt: new Date('2026-06-24T08:00:00+08:00'),
-      dueAt: new Date('2026-07-01T23:59:59+08:00'),
-      maxAttempts: 10,
-      allowLate: false,
+      caseId: case01.id,
+      status: 'PUBLISHED',
+      visibleFrom: new Date('2026-06-24T08:00:00+08:00'),
+      sortOrder: 1,
+      publishedAt: new Date('2026-06-24T08:00:00+08:00'),
+      createdById: teacher.id,
     },
   });
 
   console.info('Seed completed:', {
     course: course.code,
     term: term.name,
-    section: section.name,
-    teacher: teacher.email,
-    student: student.email,
+    sections: [section.name, visibilitySection.name],
+    admin: admin.email,
+    teachers: [teacher.email, visibilityTeacher.email],
+    students: [student.email, visibilityStudent.email],
+    releasedCases: [{ section: section.id, case: case01.code }],
+    assignment: assignment.id,
     cases: ['case_01', 'case_04', 'case_16'],
     exercise: exercise.id,
   });

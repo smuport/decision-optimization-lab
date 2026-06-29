@@ -8,9 +8,11 @@ small number of resource constraints, so this remains lightweight.
 
 from __future__ import annotations
 
+import math
 from itertools import combinations
 
-EPS = 1e-7
+DEFAULT_ABS_TOL = 1e-6
+DEFAULT_REL_TOL = 1e-5
 
 
 def validate(data, student_result, rubric=None):
@@ -26,6 +28,7 @@ def validate(data, student_result, rubric=None):
     profits = data["profits"]
     limits = data["limits"]
     consumption = data["consumption"]
+    abs_tol, rel_tol = numeric_tolerance(rubric)
 
     quantities, format_messages = parse_quantities(products, student_result["solution"])
     usage = {
@@ -37,7 +40,7 @@ def validate(data, student_result, rubric=None):
         for r in resources
     }
     max_violation = max(violations.values(), default=0.0)
-    has_negative = any(v < -EPS for v in quantities.values())
+    has_negative = any(v < -scaled_tolerance(0.0, abs_tol, rel_tol) for v in quantities.values())
     computed_objective = sum(profits[p] * quantities[p] for p in products)
     claimed_objective = as_float(student_result.get("objective"))
     objective_error = (
@@ -45,17 +48,35 @@ def validate(data, student_result, rubric=None):
         if claimed_objective is not None
         else float("inf")
     )
-    feasible = not has_negative and max_violation <= 1e-5 and not format_messages
+    constraint_tolerances = {
+        r: scaled_tolerance(limits[r], abs_tol, rel_tol)
+        for r in resources
+    }
+    feasible = (
+        not has_negative
+        and all(violations[r] <= constraint_tolerances[r] for r in resources)
+        and not format_messages
+    )
 
     optimal_objective, optimal_solution = solve_lp_by_basis_enumeration(data)
     gap = None
-    if feasible and optimal_objective and optimal_objective > EPS:
+    if feasible and optimal_objective and optimal_objective > abs_tol:
         gap = max(0.0, (optimal_objective - computed_objective) / optimal_objective * 100)
+
+    is_optimal = (
+        feasible
+        and optimal_objective is not None
+        and is_close(computed_objective, optimal_objective, abs_tol, rel_tol)
+    )
+    objective_consistent = (
+        claimed_objective is not None
+        and is_close(claimed_objective, computed_objective, abs_tol, rel_tol)
+    )
 
     score_items = {}
     score_items["feasibility"] = 20 if feasible else max(0, 20 - min(20, max_violation * 5))
     if feasible and gap is not None:
-        if gap <= 1e-5:
+        if is_optimal:
             score_items["optimality"] = 35
         elif gap <= 1:
             score_items["optimality"] = 30
@@ -67,7 +88,7 @@ def validate(data, student_result, rubric=None):
             score_items["optimality"] = 5
     else:
         score_items["optimality"] = 0
-    score_items["objective_consistency"] = 10 if objective_error <= 1e-5 else 0
+    score_items["objective_consistency"] = 10 if objective_consistent else 0
 
     metrics = student_result.get("metrics") or {}
     shadow_prices = metrics.get("shadow_prices") if isinstance(metrics, dict) else None
@@ -87,16 +108,19 @@ def validate(data, student_result, rubric=None):
     messages.extend(format_messages)
     if has_negative:
         messages.append("存在负产量，违反非负约束")
-    if max_violation > 1e-5:
+    violated_resources = [
+        r for r in resources if violations[r] > constraint_tolerances[r]
+    ]
+    if violated_resources:
         messages.append(f"资源约束违反，最大超限 {max_violation:.6g}")
-    if objective_error > 1e-5:
+    if not objective_consistent:
         messages.append(f"申报 objective 与 solution 计算值不一致，误差 {objective_error:.6g}")
     if feasible and gap is not None:
         messages.append(f"可行解，目标值 gap={gap:.4f}%")
     if not messages:
         messages.append("通过 case_01 自动检查")
 
-    status = "SUCCESS" if feasible and (gap is not None and gap <= 1e-5) else "WRONG_ANSWER"
+    status = "SUCCESS" if is_optimal else "WRONG_ANSWER"
     if not feasible:
         status = "FAILED"
 
@@ -115,6 +139,10 @@ def validate(data, student_result, rubric=None):
             "resourceViolation": violations,
             "objectiveError": objective_error,
             "optimalSolution": optimal_solution,
+            "numericTolerance": {
+                "absolute": abs_tol,
+                "relative": rel_tol,
+            },
         },
         "visualization": {},
         "messages": messages,
@@ -217,11 +245,37 @@ def satisfies_constraints(columns, full, rhs):
     return True
 
 
+def numeric_tolerance(rubric):
+    config = rubric.get("numeric_tolerance", {}) if isinstance(rubric, dict) else {}
+    abs_tol = positive_float(config.get("absolute"), DEFAULT_ABS_TOL)
+    rel_tol = positive_float(config.get("relative"), DEFAULT_REL_TOL)
+    return abs_tol, rel_tol
+
+
+def scaled_tolerance(reference, abs_tol, rel_tol):
+    return max(abs_tol, rel_tol * max(1.0, abs(float(reference))))
+
+
+def is_close(actual, expected, abs_tol, rel_tol):
+    if not math.isfinite(actual) or not math.isfinite(expected):
+        return False
+    return math.isclose(actual, expected, abs_tol=abs_tol, rel_tol=rel_tol)
+
+
+def positive_float(value, fallback):
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return fallback
+    return parsed if math.isfinite(parsed) and parsed > 0 else fallback
+
+
 def as_float(value):
     try:
-        return float(value)
+        parsed = float(value)
     except (TypeError, ValueError):
         return None
+    return parsed if math.isfinite(parsed) else None
 
 
 def _invalid(message):

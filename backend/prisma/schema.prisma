@@ -44,6 +44,25 @@ enum CaseStatus {
   ARCHIVED
 }
 
+enum CaseReleaseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ExerciseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum AssignmentStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+  ARCHIVED
+}
+
 enum ExerciseKind {
   EXACT_MODELING
   HEURISTIC
@@ -71,21 +90,23 @@ enum ReportStatus {
 }
 
 model User {
-  id             String        @id @default(uuid())
-  email          String        @unique
-  studentNo      String?       @unique @map("student_no")
-  name           String
-  role           UserRole      @default(STUDENT)
-  status         UserStatus    @default(ACTIVE)
-  passwordHash   String?       @map("password_hash")
-  createdAt      DateTime      @default(now()) @map("created_at")
-  updatedAt      DateTime      @updatedAt @map("updated_at")
-  taughtSections ClassSection[] @relation("SectionTeacher")
-  enrollments    Enrollment[]
-  submissions    Submission[]
-  scores         Score[]
-  reports        Report[]
-  manualGrades   ManualGrade[] @relation("ManualGradeGrader")
+  id                 String               @id @default(uuid())
+  email              String               @unique
+  studentNo          String?              @unique @map("student_no")
+  name               String
+  role               UserRole             @default(STUDENT)
+  status             UserStatus           @default(ACTIVE)
+  passwordHash       String?              @map("password_hash")
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
+  taughtSections     ClassSection[]       @relation("SectionTeacher")
+  enrollments        Enrollment[]
+  submissions        Submission[]
+  scores             Score[]
+  reports            Report[]
+  manualGrades       ManualGrade[]        @relation("ManualGradeGrader")
+  createdCaseReleases SectionCaseRelease[] @relation("CaseReleaseCreator")
+  createdAssignments  Assignment[]         @relation("AssignmentCreator")
 
   @@map("users")
 }
@@ -104,28 +125,29 @@ model Course {
 }
 
 model Term {
-  id        String         @id @default(uuid())
-  courseId  String         @map("course_id")
-  name      String
-  startsAt  DateTime?      @map("starts_at")
-  endsAt    DateTime?      @map("ends_at")
-  course    Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  sections  ClassSection[]
+  id       String         @id @default(uuid())
+  courseId String         @map("course_id")
+  name     String
+  startsAt DateTime?      @map("starts_at")
+  endsAt   DateTime?      @map("ends_at")
+  course   Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  sections ClassSection[]
 
   @@index([courseId])
   @@map("terms")
 }
 
 model ClassSection {
-  id          String       @id @default(uuid())
-  termId      String       @map("term_id")
-  name        String
-  teacherId   String?      @map("teacher_id")
-  term        Term         @relation(fields: [termId], references: [id], onDelete: Cascade)
-  teacher     User?        @relation("SectionTeacher", fields: [teacherId], references: [id])
-  enrollments Enrollment[]
-  assignments Assignment[]
-  scores      Score[]
+  id           String               @id @default(uuid())
+  termId       String               @map("term_id")
+  name         String
+  teacherId    String?              @map("teacher_id")
+  term         Term                 @relation(fields: [termId], references: [id], onDelete: Cascade)
+  teacher      User?                @relation("SectionTeacher", fields: [teacherId], references: [id])
+  enrollments  Enrollment[]
+  assignments  Assignment[]
+  caseReleases SectionCaseRelease[] @relation("SectionCaseReleaseSection")
+  scores       Score[]
 
   @@index([termId])
   @@index([teacherId])
@@ -146,44 +168,73 @@ model Enrollment {
 }
 
 model Case {
-  id              String       @id @default(uuid())
-  courseId        String       @map("course_id")
-  code            String       @unique
+  id              String               @id @default(uuid())
+  courseId        String               @map("course_id")
+  code            String               @unique
   title           String
   subtitle        String?
-  category        CaseCategory @default(LINEAR_PROGRAMMING)
-  difficulty      Difficulty   @default(EASY)
-  status          CaseStatus   @default(PUBLISHED)
-  knowledgePoints Json         @default("[]") @map("knowledge_points")
+  category        CaseCategory         @default(LINEAR_PROGRAMMING)
+  difficulty      Difficulty           @default(EASY)
+  status          CaseStatus           @default(DRAFT)
+  knowledgePoints Json                 @default("[]") @map("knowledge_points")
   summary         String?
   content         Json?
-  sortOrder       Int          @default(0) @map("sort_order")
-  createdAt       DateTime     @default(now()) @map("created_at")
-  updatedAt       DateTime     @updatedAt @map("updated_at")
-  course          Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  sortOrder       Int                  @default(0) @map("sort_order")
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
+  course          Course               @relation(fields: [courseId], references: [id], onDelete: Cascade)
   exercises       Exercise[]
+  sectionReleases SectionCaseRelease[] @relation("SectionCaseReleaseCase")
 
   @@index([courseId])
   @@map("cases")
 }
 
 model Exercise {
-  id           String       @id @default(uuid())
-  caseId       String       @map("case_id")
+  id           String         @id @default(uuid())
+  caseId       String         @map("case_id")
+  code         String
   title        String
+  description  String?
   kind         ExerciseKind
+  status       ExerciseStatus @default(DRAFT)
+  assetPath    String         @map("asset_path")
   entrypoint   String?
-  outputSchema Json?        @map("output_schema")
+  outputSchema Json?          @map("output_schema")
   guide        Json?
-  sortOrder    Int          @default(0) @map("sort_order")
-  case         Case         @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  sortOrder    Int            @default(0) @map("sort_order")
+  case         Case           @relation(fields: [caseId], references: [id], onDelete: Cascade)
   datasets     Dataset[]
   templates    Template[]
   rubrics      Rubric[]
   assignments  Assignment[]
 
+  @@unique([caseId, code])
   @@index([caseId])
   @@map("exercises")
+}
+
+model SectionCaseRelease {
+  id           String            @id @default(uuid())
+  sectionId    String            @map("section_id")
+  caseId       String            @map("case_id")
+  status       CaseReleaseStatus @default(DRAFT)
+  visibleFrom  DateTime?         @map("visible_from")
+  visibleUntil DateTime?         @map("visible_until")
+  sortOrder    Int               @default(0) @map("sort_order")
+  publishedAt  DateTime?         @map("published_at")
+  createdById  String            @map("created_by_id")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+  section      ClassSection      @relation("SectionCaseReleaseSection", fields: [sectionId], references: [id], onDelete: Cascade)
+  case         Case              @relation("SectionCaseReleaseCase", fields: [caseId], references: [id], onDelete: Restrict)
+  createdBy    User              @relation("CaseReleaseCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@unique([sectionId, caseId])
+  @@index([caseId])
+  @@index([createdById])
+  @@index([sectionId, status])
+  @@map("section_case_releases")
 }
 
 model Dataset {
@@ -230,21 +281,28 @@ model Rubric {
 }
 
 model Assignment {
-  id          String       @id @default(uuid())
-  sectionId   String       @map("section_id")
-  exerciseId  String       @map("exercise_id")
+  id          String           @id @default(uuid())
+  sectionId   String           @map("section_id")
+  exerciseId  String           @map("exercise_id")
   title       String
-  opensAt     DateTime?    @map("opens_at")
-  dueAt       DateTime?    @map("due_at")
-  maxAttempts Int?         @map("max_attempts")
-  allowLate   Boolean      @default(false) @map("allow_late")
-  section     ClassSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  exercise    Exercise     @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  description String?
+  status      AssignmentStatus @default(DRAFT)
+  opensAt     DateTime?        @map("opens_at")
+  dueAt       DateTime?        @map("due_at")
+  maxAttempts Int?             @map("max_attempts")
+  allowLate   Boolean          @default(false) @map("allow_late")
+  publishedAt DateTime?        @map("published_at")
+  createdById String           @map("created_by_id")
+  section     ClassSection     @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  exercise    Exercise         @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+  createdBy   User             @relation("AssignmentCreator", fields: [createdById], references: [id], onDelete: Restrict)
   submissions Submission[]
   scores      Score[]
 
-  @@unique([sectionId, exerciseId])
+  @@index([sectionId])
+  @@index([sectionId, exerciseId])
   @@index([exerciseId])
+  @@index([createdById])
   @@map("assignments")
 }
 

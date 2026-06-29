@@ -1,4 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
+import { CurrentUser, Roles } from '../auth/auth.decorators';
+import type { CurrentUserData } from '../auth/auth.types';
 import { ok } from '../common/api-response';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -7,7 +9,7 @@ export class CoursesController {
   constructor(private readonly prisma: PrismaService) {}
 
   @Get('courses/current')
-  async currentCourse() {
+  async currentCourse(@CurrentUser() user: CurrentUserData) {
     const course = await this.prisma.course.findFirstOrThrow({
       where: { code: 'ENGINEERING_DECISION_OPTIMIZATION' },
       include: {
@@ -17,6 +19,7 @@ export class CoursesController {
           include: {
             sections: {
               include: {
+                enrollments: true,
                 assignments: {
                   include: {
                     exercise: {
@@ -32,6 +35,13 @@ export class CoursesController {
         },
       },
     });
+    const visibleSections = course.terms[0]?.sections.filter((section) => {
+      if (user.role === 'ADMIN') return true;
+      if (user.role === 'TEACHER') return section.teacherId === user.id;
+      return section.enrollments.some(
+        (enrollment) => enrollment.userId === user.id && enrollment.status === 'ACTIVE',
+      );
+    });
 
     return ok({
       id: course.id,
@@ -44,7 +54,7 @@ export class CoursesController {
             name: course.terms[0].name,
             startsAt: course.terms[0].startsAt?.toISOString(),
             endsAt: course.terms[0].endsAt?.toISOString(),
-            sections: course.terms[0].sections.map((section) => ({
+            sections: (visibleSections ?? []).map((section) => ({
               id: section.id,
               name: section.name,
               assignments: section.assignments.map((assignment) => ({
@@ -64,8 +74,9 @@ export class CoursesController {
     });
   }
 
+  @Roles('TEACHER', 'ADMIN')
   @Get('terms/current/sections')
-  async currentSections() {
+  async currentSections(@CurrentUser() user: CurrentUserData) {
     const term = await this.prisma.term.findFirstOrThrow({
       orderBy: { startsAt: 'desc' },
       include: {
@@ -83,7 +94,9 @@ export class CoursesController {
         id: term.id,
         name: term.name,
       },
-      sections: term.sections.map((section) => ({
+      sections: term.sections
+        .filter((section) => user.role === 'ADMIN' || section.teacherId === user.id)
+        .map((section) => ({
         id: section.id,
         name: section.name,
         teacher: section.teacher
@@ -94,8 +107,7 @@ export class CoursesController {
             }
           : undefined,
         enrollmentCount: section.enrollments.length,
-      })),
+        })),
     });
   }
 }
-

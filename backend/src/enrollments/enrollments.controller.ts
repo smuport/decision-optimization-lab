@@ -1,4 +1,5 @@
 import { Body, Controller, Param, Post } from '@nestjs/common';
+import { Roles } from '../auth/auth.decorators';
 import { ok } from '../common/api-response';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -11,6 +12,7 @@ type ImportEnrollmentBody = {
 };
 
 @Controller('admin/sections')
+@Roles('ADMIN')
 export class EnrollmentsController {
   constructor(private readonly prisma: PrismaService) {}
 
@@ -55,4 +57,3 @@ export class EnrollmentsController {
     return ok({ imported }, '学生名单导入完成');
   }
 }
-

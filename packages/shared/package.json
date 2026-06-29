@@ -12,6 +12,9 @@
     "test": "echo \"shared tests will be added with DTO validation\"",
     "lint": "echo \"shared lint script will be added later\""
   },
+  "dependencies": {
+    "zod": "^4.3.6"
+  },
   "devDependencies": {
     "typescript": "~5.9.3"
   }
