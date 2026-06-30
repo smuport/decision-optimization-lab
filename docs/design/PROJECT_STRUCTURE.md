@@ -70,6 +70,7 @@ decision-optimization-lab/
 │   │       │   ├── api-client.service.ts
 │   │       │   └── auth-state.service.ts
 │   │       └── features/
+│   │           ├── admin/
 │   │           ├── login/
 │   │           ├── course-home/
 │   │           ├── cases/
@@ -92,6 +93,7 @@ decision-optimization-lab/
 │   │   ├── main.ts
 │   │   ├── app.module.ts
 │   │   ├── auth/
+│   │   ├── cases/
 │   │   ├── common/
 │   │   ├── courses/
 │   │   ├── enrollments/
@@ -119,11 +121,14 @@ decision-optimization-lab/
 ├── course-assets/
 │   ├── cases/
 │   │   └── case_01/
-│   │       ├── datasets/
-│   │       ├── template.py
-│   │       ├── validator.py
-│   │       ├── rubric.json
-│   │       └── case_manifest.json
+│   │       ├── case_manifest.json
+│   │       └── exercises/
+│   │           └── production_planning/
+│   │               ├── exercise_manifest.json
+│   │               ├── template.py
+│   │               ├── validator.py
+│   │               ├── rubric.json
+│   │               └── datasets/public/
 │   └── manifests/
 │
 ├── runner/
@@ -290,6 +295,7 @@ frontend/src/app/features/
 
 backend/src/
 ├── cases/
+├── exercises/
 ├── case-releases/
 └── assignments/
 

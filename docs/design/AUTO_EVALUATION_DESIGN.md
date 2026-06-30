@@ -140,6 +140,18 @@ Exercise 发布前的资源完整性检查包括：
 
 > 本文后续 Docker、BullMQ、MinIO 和独立 Evaluator 章节是平台后期安全与扩展参考，不属于 Week3 实施范围。Week3 继续由 NestJS runner-adapter 同步调用本地 runner。
 
+### 0.6 Week3 Day4 实施状态
+
+2026-06-30 已将 case01 的评测资产迁移到 `course-assets/cases/case_01/exercises/production_planning/`：
+
+- `case_manifest.json` 只保留 Case 教学内容元数据；`exercise_manifest.json` 保存 Exercise code、entrypoint、output schema、模板、数据集、rubric 和 validator 路径。
+- NestJS runner adapter 使用 `exerciseCode + datasetKey + submissionPath` 调用 `runner/evaluate.py --exercise`。
+- runner 根据全局唯一的 Exercise code 定位 manifest，并在 artifacts 中同时返回 `caseId` 与 `exerciseId`。
+- `runner/evaluate.py --case case_01` 保留为 Week2 命令行兼容入口，通过显式映射转到 `production_planning`；新增练习不使用该兼容方式。
+- 资源检查验证 entrypoint、非空 output schema、唯一默认模板、公开数据、唯一 active rubric，以及 validator 文件可导入。
+- 练习资源包采用显式白名单，只包含 README、默认模板、公开数据集和 `output-schema.json`；路径必须位于该 Exercise 的 assetPath 内。
+- 隐藏数据、validator、rubric、参考实现和内部文件不会进入 zip。
+
 ## 一、系统架构
 
 ```

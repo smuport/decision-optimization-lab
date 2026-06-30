@@ -2,7 +2,7 @@
 
 > This file is the external memory for the project. Update it after every meaningful implementation or documentation change.
 
-Last updated: 2026-06-29
+Last updated: 2026-06-30
 
 ---
 
@@ -13,6 +13,12 @@ Week2 Day7 completed: teacher progress API statistics, teacher dashboard, assign
 Week3 Day1 completed: shared management contracts and runtime schemas, the SectionCaseRelease/Exercise/Assignment Prisma model, compatible migration, two-section seed data, migration data-check SQL, empty-database verification, repeated seed, and existing Week2 database migration have all passed.
 
 Week3 Day2 completed: bcrypt-backed demo accounts, JWT authentication, global auth/role guards, section ownership checks, trusted current-user submission and grading, scoped existing APIs, frontend session recovery/interceptor/role routes, and real two-section permission acceptance have passed.
+
+Week3 Day3 completed: ADMIN Case pagination/search/filtering, draft creation, detail and Exercise summaries, metadata editing, forward-only publish/archive state transitions, archived read-only protection, management UI, unsaved-change confirmation, automated tests, production builds, and real PostgreSQL API acceptance have passed.
+
+Week3 Day4 completed: ADMIN Exercise management, case01 Exercise-owned asset migration, exercise manifest, six-part resource checks, publication blocking, Exercise-aware runner with legacy Case mapping, student-safe resource package generation, management UI, automated regression, repeated seed, and real PostgreSQL API/submission acceptance have passed.
+
+Week3 Day5 completed: TEACHER section students and three-tab management, PUBLISHED Case catalog/search/batch release, release windows/order/archive, strict `/me/cases` visibility, no-assignment read-only behavior, automated tests, production compilation, and real two-section API isolation acceptance have passed.
 
 Follow-up completed: case01 teaching resources now provide a real downloadable resource package while preserving JSON APIs for preview/workspace initialization.
 
@@ -55,6 +61,7 @@ The project has completed Week1 demo assets and Week2 Day1 through Day7. Version
 - ADMIN maintains Case/Exercise metadata and status. TEACHER manages releases and assignments only for sections they teach.
 - Exercise owns templates, datasets, rubric, validator, output schema, and downloadable resources. Assignment adds section, schedule, attempt, and late-submission rules.
 - Week3 does not provide online editing/upload of templates, datasets, rubric, or validator; repository assets remain the source of truth.
+- SectionCaseRelease is the only current student Case catalog gate; Case visibility requires ACTIVE Enrollment, PUBLISHED release, and an active visibility window.
 
 ---
 
@@ -224,6 +231,22 @@ The project has completed Week1 demo assets and Week2 Day1 through Day7. Version
   - real logins for ADMIN, two TEACHER accounts, and two STUDENT accounts
   - real 401, role 403, cross-section teacher/student 403, resource isolation, and malicious `userId` rejection
   - successful case01 submission `602ce0f4-063e-4cca-bc47-79a019a8447e` with score 95 using the JWT student identity
+- Implemented and verified Week3 Day3 ADMIN Case management:
+  - shared pagination query, Case list/detail/request contracts, and runtime validation
+  - ADMIN-only list, search, status filter, create, edit, publish, archive, and Exercise summaries
+  - forward-only Case state machine and archived read-only protection without a delete endpoint
+  - Angular Case directory/editor, student-view preview, inline Exercise draft entry, and unsaved-change guard
+  - 16 backend tests and 7 frontend tests passed at Day3 closeout
+  - real PostgreSQL create/edit/publish/archive/filter acceptance and TEACHER/STUDENT 403 checks
+- Implemented and verified Week3 Day4 ADMIN Exercise management and assets:
+  - ADMIN-only Exercise list/create/detail/edit/status/resource-check APIs and Angular management page
+  - six-part resource checks with parameterized missing-resource coverage and publish blocking
+  - case01 assets migrated to `course-assets/cases/case_01/exercises/production_planning`
+  - Exercise-aware runner input with explicit Week2 `case_01` compatibility mapping
+  - whitelist resource zip with README, template, public datasets, and output schema only
+  - 31 backend tests, 9 frontend tests, and 8 runner tests passed
+  - repeated seed preserved 22 Submission rows, 22 RunResult rows, Exercise id, and all tested foreign keys
+  - real ADMIN resource check, incomplete publish rejection, STUDENT resource download, role 403, and synchronous score-95 submission passed
 - Implemented the real `/exercises/:exerciseId/workspace`:
   - exercise, dataset, output-schema, and rubric summary
   - template-loaded Python textarea
@@ -327,7 +350,7 @@ The project has completed Week1 demo assets and Week2 Day1 through Day7. Version
 
 ## Next Implementation Step
 
-Start Week3 Day3 from `plans/WEEK3_BUILD_PLAN.md`: implement ADMIN Case list, create, detail, edit, status transitions, history protection, and management UI using the verified Day2 role boundary.
+Start Week3 Day6 from `plans/WEEK3_BUILD_PLAN.md`: implement Assignment lifecycle and availability, migrate workspace/resource/submission access to Assignment, and complete attempt/late-submission enforcement.
 
 ---
 
@@ -335,7 +358,7 @@ Start Week3 Day3 from `plans/WEEK3_BUILD_PLAN.md`: implement ADMIN Case list, cr
 
 - Shared response contracts are now wired through the frontend API client; UI-only view models may remain local.
 - Week2 feature implementation and runtime database API acceptance are complete.
-- Week3 Day1 and Day2 are complete; Day3 ADMIN Case management is next.
+- Week3 Day1 through Day5 are complete; Day6 Assignment management and Assignment-centric student entry are next.
 - Week3 remains case01-only and focuses on the management control plane rather than new cases or infrastructure.
 - HTTP Authorization interceptor, global error toast/handler, and 404 page are useful polish, but non-blocking for Week2 completion.
 - `GET /api/v1/submissions/:id` now exposes `codeText` for Week2 read-only code replay.

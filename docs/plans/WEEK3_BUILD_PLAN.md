@@ -163,6 +163,8 @@ ClassSection
 
 ### Day 3：ADMIN Case 管理
 
+> 实施状态（2026-06-30）：已完成。ADMIN Case 分页/筛选、草稿创建、详情与 Exercise 摘要、元数据编辑、单向状态流转、归档只读、前端管理页面、离开确认、自动化测试和真实数据库 API 验收均通过。
+
 #### 目标
 
 - 让 ADMIN 能维护共享案例目录，而不再依赖 seed 修改案例元数据。
@@ -218,6 +220,8 @@ ClassSection
 ---
 
 ### Day 4：ADMIN Exercise 管理、资源目录迁移与完整性检查
+
+> 实施状态（2026-06-30）：已完成。Exercise 管理 API/UI、case01 Exercise 资产目录、exercise manifest、六项资源完整性检查、发布阻断、Exercise-aware runner、旧 Case 参数兼容、资源包白名单、自动化测试和真实数据库/API 验收均通过。
 
 #### 目标
 
@@ -275,6 +279,8 @@ course-assets/cases/case_01/exercises/production_planning/
 ---
 
 ### Day 5：TEACHER 教学班管理与 SectionCaseRelease
+
+> 实施状态（2026-06-30）：已完成。教师班级三 Tab、学生名单、案例目录与批量发布、Release 时间窗口/排序/归档、`/me/cases` 严格可见性、无作业只读状态、自动化测试和真实双教学班 API 验收均通过。
 
 #### 目标
 

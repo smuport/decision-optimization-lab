@@ -358,6 +358,10 @@ Assignment 的学生可用状态不单独持久化，根据字段计算：
 - seed 保留 Week2 演示数据，新增 ADMIN、第二教师、第二学生和无 CaseRelease 的可见性对照班。
 - 数据关系验收 SQL 位于 `backend/prisma/tests/week3_day1_data_check.sql`，会检查回填关系、孤立外键、跨班隔离和同练习重复作业能力，并在事务中回滚测试数据。
 
+### 0.9 Week3 Day5 可见性实施状态
+
+2026-06-30 已将 `SectionCaseRelease` 接入教师控制面和学生查询链路。当前可见性查询同时要求 ACTIVE Enrollment、Release=PUBLISHED，并按包含边界的 `visibleFrom <= now <= visibleUntil` 判断；空时间边界不限制。Release 归档只改变当前目录可见性，不删除 Case、Assignment、Submission 或历史评测关系。批量发布使用事务写入，且仍受 `(sectionId, caseId)` 唯一约束保护。
+
 `pnpm verify:week3:day1` 已在本地 PostgreSQL 完成空库 migration、重复 seed、现有 Week2 数据库 migration 和事务化数据关系检查。迁移前后均为 20 条 Submission、20 条 RunResult 和 0 条 Score；原 Assignment id 及其外键保持不变。演示班有一个 PUBLISHED case01 Release，可见性对照班没有 Release。
 
 ## 一、ER 图（实体关系概览）

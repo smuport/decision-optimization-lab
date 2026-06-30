@@ -119,13 +119,14 @@ Version 1.1 主要页面：
 
 | 资产 | 说明 | 优先级 |
 |------|------|--------|
-| `case_manifest.json` | 案例编号、标题、分类、难度、知识点、依赖、入口函数 | P0 |
+| `case_manifest.json` | 案例编号、标题、分类、难度和知识点 | P0 |
+| `exercise_manifest.json` | 练习编码、入口函数、输出规范和资产路径 | P0 |
 | `README.md` | 学生可读的理论、建模、算法与实验说明 | P0 |
-| `data_small/medium/large.json` | 公开数据集，供下载和本地调试 | P0 |
-| `hidden_*.json` | 隐藏评测数据，只在服务端使用 | P1 |
-| `template.py` | 学生提交代码模板，定义统一函数接口 | P0 |
-| `validator.py` | 该案例的评测器，负责可行性与指标计算 | P0 |
-| `rubric.json` | 评分规则版本，支持自动评分和教师补评分 | P0 |
+| `exercises/<code>/datasets/public/*.json` | 公开数据集，供下载和本地调试 | P0 |
+| `exercises/<code>/datasets/hidden/*.json` | 隐藏评测数据，只在服务端使用 | P1 |
+| `exercises/<code>/template.py` | 学生提交代码模板，定义统一函数接口 | P0 |
+| `exercises/<code>/validator.py` | 该练习的评测器，负责可行性与指标计算 | P0 |
+| `exercises/<code>/rubric.json` | 评分规则版本，支持自动评分和教师补评分 | P0 |
 | `reference_solution.py` | 教师参考实现，不对学生公开 | P1 |
 | `visualization_schema.json` | 路线图、收敛曲线、资源利用率等可视化数据格式 | P2 |
 
@@ -225,11 +226,13 @@ decision-optimization-lab/
 │   │   ├── case_01/
 │   │   │   ├── case_manifest.json
 │   │   │   ├── README.md
-│   │   │   ├── template.py
-│   │   │   ├── validator.py
-│   │   │   ├── rubric.json
-│   │   │   ├── datasets/
-│   │   │   └── hidden/
+│   │   │   └── exercises/
+│   │   │       └── production_planning/
+│   │   │           ├── exercise_manifest.json
+│   │   │           ├── template.py
+│   │   │           ├── validator.py
+│   │   │           ├── rubric.json
+│   │   │           └── datasets/
 │   │   └── ...
 │   └── manifests/
 │

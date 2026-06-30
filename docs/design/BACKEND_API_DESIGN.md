@@ -177,11 +177,15 @@ Exercise 管理字段包括 `code`、`title`、`description`、`kind`、`entrypo
 ```text
 GET    /api/v1/teacher/sections/:sectionId/case-releases
 POST   /api/v1/teacher/sections/:sectionId/case-releases
+POST   /api/v1/teacher/sections/:sectionId/case-releases/batch
+GET    /api/v1/teacher/sections/:sectionId/students
 PATCH  /api/v1/teacher/case-releases/:id
 PATCH  /api/v1/teacher/case-releases/:id/status
 ```
 
 请求字段为 `caseId`、`visibleFrom?`、`visibleUntil?` 和 `sortOrder`。后端必须校验当前教师负责该教学班、Case 为 PUBLISHED、时间窗口合法且 `(sectionId, caseId)` 不重复。
+
+Day5 已实现上述接口。Release 列表响应同时返回当前教学班、课程内 PUBLISHED Case 目录和已有 Release，供教师在一个班级上下文中完成搜索与选择；批量发布先统一校验全部 Case 和重复关系，再通过事务一次写入，避免部分成功。学生名单只返回该班 Enrollment 和必要学生摘要。
 
 #### TEACHER 作业管理
 
@@ -215,6 +219,8 @@ GET /api/v1/me/assignments/:assignmentId
 ```
 
 `/me/cases` 只返回当前学生 ACTIVE Enrollment 所属教学班中，位于可见时间窗口的 PUBLISHED SectionCaseRelease。Case 详情只返回本班已发布 Assignment 对应的 Exercise 摘要，不暴露未发布练习。
+
+Day5 已实现 `/me/cases` 与详情：案例可通过 id 或 code 读取；越权、未发布、未来开始、已过期或已归档均按不可见处理。Case 已可见但没有本班 PUBLISHED Assignment 时返回空 `assignments`，学生仍可阅读案例内容，但没有工作区和资源入口。
 
 `/me/assignments` 返回 Assignment 持久化状态、计算状态、Case/Exercise 摘要、截止时间、提交次数和剩余次数。
 
@@ -302,6 +308,29 @@ Prisma model 只在 repository/service 内部流转。每个模块通过显式 m
 - 错误响应统一使用 `ApiError`；未登录/无效 token 为 `2001/401`，过期 token 为 `2003/401`，角色或教学班越权为 `2002/403`，教学班越权的 `details` 为 `SECTION_ACCESS_DENIED`。
 
 本地开发通过 `DECISION_LAB_JWT_SECRET` 配置签名密钥；未配置时仅使用代码中的本地开发 fallback，不应用于正式部署。
+
+### 0.11 Week3 Day3 ADMIN Case 管理实施状态
+
+2026-06-30 已实现 `GET/POST /api/v1/admin/cases`、`GET/PATCH /api/v1/admin/cases/:id` 和 `PATCH /api/v1/admin/cases/:id/status`：
+
+- 列表支持 `page`、`pageSize`、`status`、`keyword`，按 `sortOrder` 和 `updatedAt` 稳定排序，并返回 Exercise 数量。
+- 创建固定产生 DRAFT Case，校验课程存在、全局 code 唯一、标题和枚举等 shared 运行时契约。
+- code 和 courseId 创建后不可修改；ARCHIVED Case 为只读。
+- 状态只允许 `DRAFT → PUBLISHED → ARCHIVED`，不允许回退或恢复；不提供物理删除接口。
+- 详情通过显式 mapper 返回 Case 元数据和 Exercise 摘要，不向前端暴露 Prisma model。
+- 全部接口受 ADMIN 角色保护，TEACHER/STUDENT 返回 403。
+
+### 0.12 Week3 Day4 ADMIN Exercise 管理实施状态
+
+2026-06-30 已实现全部 ADMIN Exercise 路由：
+
+- Case 下的 Exercise 列表与草稿创建校验 Case 存在、Case 未归档，以及 `(caseId, code)` 唯一。
+- Exercise code 和所属 Case 创建后不可修改；ARCHIVED Exercise 为只读。
+- 状态只允许 `DRAFT → PUBLISHED → ARCHIVED`，发布前必须通过六项资源检查。
+- PUBLISHED Exercise 修改后必须在同一事务内再次通过资源检查；已归档 Case 下的 Exercise 不允许发布。
+- `GET /admin/exercises/:id/resource-check` 返回 shared `ExerciseResourceCheckDto`，检查结果直接用于前端发布按钮和后端发布事务前置条件。
+- 资源路径限制在 `course-assets` 内，manifest 中的相对路径限制在 Exercise assetPath 内，拒绝路径越界。
+- 管理路由仅 ADMIN 可用；TEACHER 继续通过自己教学班授权范围内的 `/exercises/:id` 预览，STUDENT 只能访问本班 Assignment 对应练习。
 
 ## 一、API 设计规范
 
