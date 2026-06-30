@@ -30,6 +30,7 @@ import { ApiClientService } from '../../core/api-client.service';
               }
             </select>
           </label>
+          <a class="secondary-button" [routerLink]="['/teacher/sections', selectedSectionId()]">管理教学班</a>
         }
       </header>
 

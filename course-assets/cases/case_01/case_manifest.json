@@ -12,39 +12,6 @@
     "对偶问题"
   ],
   "source": {
-    "readme": "../../../../非全日制决策优化课03/case_01/README.md",
-    "reference_solution": "../../../../非全日制决策优化课03/case_01/solve.py"
-  },
-  "datasets": [
-    {
-      "id": "small",
-      "label": "小规模",
-      "visibility": "PUBLIC",
-      "path": "datasets/data_small.json"
-    },
-    {
-      "id": "medium",
-      "label": "中规模",
-      "visibility": "PUBLIC",
-      "path": "datasets/data_medium.json"
-    },
-    {
-      "id": "large",
-      "label": "大规模",
-      "visibility": "PUBLIC",
-      "path": "datasets/data_large.json"
-    }
-  ],
-  "template": "template.py",
-  "validator": "validator.py",
-  "rubric": "rubric.json",
-  "entrypoint": "solve",
-  "expected_output": {
-    "objective": "number",
-    "solution": "dict: product -> quantity",
-    "metrics": {
-      "shadow_prices": "dict: resource -> number",
-      "resource_usage": "dict: resource -> number"
-    }
+    "readme": "../../../../非全日制决策优化课03/case_01/README.md"
   }
 }

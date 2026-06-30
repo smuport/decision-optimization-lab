@@ -23,7 +23,8 @@ export class RunnerAdapterService {
   private readonly rootDir = resolve(__dirname, '..', '..', '..');
 
   async evaluate(input: {
-    caseCode: string;
+    exerciseCode: string;
+    caseCode?: string;
     datasetKey: string;
     code: string;
   }): Promise<RunnerResult> {
@@ -34,8 +35,8 @@ export class RunnerAdapterService {
 
     const { exitCode, stderr } = await this.runPython([
       'runner/evaluate.py',
-      '--case',
-      input.caseCode,
+      '--exercise',
+      input.exerciseCode,
       '--dataset',
       input.datasetKey,
       '--submission',
@@ -79,4 +80,3 @@ export class RunnerAdapterService {
     });
   }
 }
-

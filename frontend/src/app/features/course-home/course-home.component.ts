@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
-import type { CurrentCourseResponse, ExerciseListItem } from '@decision-lab/shared';
+import type { CurrentCourseResponse, StudentCaseDto } from '@decision-lab/shared';
 import { ApiClientService } from '../../core/api-client.service';
 import { AuthStateService } from '../../core/auth-state.service';
 
@@ -36,10 +36,7 @@ import { AuthStateService } from '../../core/auth-state.service';
             <span>教学班</span>
             <strong>{{ sectionCount() }}</strong>
           </section>
-          <section class="metric-card">
-            <span>本周实验</span>
-            <strong>{{ assignmentCount() }}</strong>
-          </section>
+          <section class="metric-card"><span>可见案例</span><strong>{{ cases().length }}</strong></section>
           <section class="metric-card">
             <span>登录状态</span>
             <strong>{{ auth.isAuthenticated() ? '已登录' : '演示可浏览' }}</strong>
@@ -55,22 +52,22 @@ import { AuthStateService } from '../../core/auth-state.service';
           </div>
 
           <div class="assignment-list">
-            @for (assignment of assignments(); track assignment.id) {
+            @for (item of cases(); track item.id) {
               <article class="assignment-row">
                 <div>
-                  <span class="case-code">{{ assignment.exercise.caseCode }}</span>
-                  <h3>{{ assignment.exercise.caseTitle }}</h3>
-                  <p>{{ assignment.title }} · {{ assignment.exercise.title }}</p>
+                  <span class="case-code">{{ item.code }}</span>
+                  <h3>{{ item.title }}</h3>
+                  <p>{{ item.summary ?? item.subtitle }}</p>
                 </div>
                 <div class="assignment-meta">
-                  <span>截止：{{ formatDate(assignment.dueAt) }}</span>
-                  <a class="primary-button" [routerLink]="['/cases', assignment.exercise.caseCode]">
+                  <span>{{ item.assignments.length ? item.assignments.length + ' 个已发布练习' : '暂无已发布练习' }}</span>
+                  <a class="primary-button" [routerLink]="['/cases', item.id]">
                     进入案例
                   </a>
                 </div>
               </article>
             } @empty {
-              <p class="empty-state">当前教学班还没有发布实验任务。</p>
+              <p class="empty-state">当前教学班还没有可见案例。</p>
             }
           </div>
         </section>
@@ -95,27 +92,6 @@ import { AuthStateService } from '../../core/auth-state.service';
           </div>
         </section>
 
-        <section class="content-band">
-          <div class="band-heading">
-            <div>
-              <p class="section-kicker">实验索引</p>
-              <h2>已接入 API 的实验</h2>
-            </div>
-          </div>
-
-          <div class="exercise-grid">
-            @for (exercise of exercises(); track exercise.id) {
-              <article class="exercise-card">
-                <span>{{ exercise.case.code }}</span>
-                <h3>{{ exercise.case.title }}</h3>
-                <p>{{ exercise.title }}</p>
-                <small>{{ exercise.case.knowledgePoints.join(' / ') }}</small>
-              </article>
-            } @empty {
-              <p class="empty-state">暂无实验数据。</p>
-            }
-          </div>
-        </section>
       }
     </section>
   `,
@@ -126,21 +102,17 @@ export class CourseHomeComponent implements OnInit {
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
   protected readonly course = signal<CurrentCourseResponse | null>(null);
-  protected readonly exercises = signal<ExerciseListItem[]>([]);
-  protected readonly assignments = computed(() =>
-    this.course()?.currentTerm?.sections.flatMap((section) => section.assignments) ?? [],
-  );
+  protected readonly cases = signal<StudentCaseDto[]>([]);
   protected readonly sectionCount = computed(() => this.course()?.currentTerm?.sections.length ?? 0);
-  protected readonly assignmentCount = computed(() => this.assignments().length);
 
   ngOnInit() {
     forkJoin({
       course: this.api.currentCourse(),
-      exercises: this.api.exercises(),
+      cases: this.api.studentCases(),
     }).subscribe({
-      next: ({ course, exercises }) => {
+      next: ({ course, cases }) => {
         this.course.set(course);
-        this.exercises.set(exercises);
+        this.cases.set(cases);
         this.loading.set(false);
       },
       error: () => {

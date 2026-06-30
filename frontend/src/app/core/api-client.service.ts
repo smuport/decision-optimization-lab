@@ -1,22 +1,41 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { map } from 'rxjs';
 import type {
+  AdminCaseDetailDto,
+  AdminCaseListItemDto,
+  AdminCaseListQuery,
+  AdminExerciseDetailDto,
+  AdminExerciseListItemDto,
   ApiResponse,
   AuthLoginRequest,
   AuthLoginResponse,
+  CreateCaseRequest,
+  CreateExerciseRequest,
+  BatchCreateSectionCaseReleasesRequest,
   CurrentCourseResponse,
   CurrentSectionsResponse,
   DatasetDownloadInfo,
   ExerciseDetail,
   ExerciseListItem,
+  PaginatedResponse,
   RunResultDto,
   SubmissionCreateRequest,
   SubmissionCreateResponse,
   SubmissionDetailResponse,
   TeacherProgressResponse,
+  TeacherCaseReleaseOverviewDto,
+  TeacherSectionStudentDto,
   TeacherSubmissionListItem,
   TemplateDto,
+  UpdateCaseRequest,
+  UpdateCaseStatusRequest,
+  UpdateExerciseRequest,
+  UpdateExerciseStatusRequest,
+  UpdateSectionCaseReleaseRequest,
+  UpdateSectionCaseReleaseStatusRequest,
+  StudentCaseDetailDto,
+  StudentCaseDto,
   UserDto,
 } from '@decision-lab/shared';
 
@@ -83,6 +102,84 @@ export class ApiClientService {
     return this.get<TeacherSubmissionListItem[]>(`teacher/assignments/${assignmentId}/submissions`);
   }
 
+  teacherSectionStudents(sectionId: string) {
+    return this.get<TeacherSectionStudentDto[]>(`teacher/sections/${sectionId}/students`);
+  }
+
+  teacherCaseReleases(sectionId: string) {
+    return this.get<TeacherCaseReleaseOverviewDto>(`teacher/sections/${sectionId}/case-releases`);
+  }
+
+  batchCreateTeacherCaseReleases(sectionId: string, body: BatchCreateSectionCaseReleasesRequest) {
+    return this.post<TeacherCaseReleaseOverviewDto['releases']>(`teacher/sections/${sectionId}/case-releases/batch`, body);
+  }
+
+  updateTeacherCaseRelease(id: string, body: UpdateSectionCaseReleaseRequest) {
+    return this.patch<TeacherCaseReleaseOverviewDto['releases'][number]>(`teacher/case-releases/${id}`, body);
+  }
+
+  updateTeacherCaseReleaseStatus(id: string, body: UpdateSectionCaseReleaseStatusRequest) {
+    return this.patch<TeacherCaseReleaseOverviewDto['releases'][number]>(`teacher/case-releases/${id}/status`, body);
+  }
+
+  studentCases() {
+    return this.get<StudentCaseDto[]>('me/cases');
+  }
+
+  studentCase(id: string) {
+    return this.get<StudentCaseDetailDto>(`me/cases/${id}`);
+  }
+
+  adminCases(query: AdminCaseListQuery = {}) {
+    let params = new HttpParams();
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== undefined && value !== '') params = params.set(key, String(value));
+    }
+    return this.http
+      .get<PaginatedResponse<AdminCaseListItemDto>>(`${this.baseUrl}/admin/cases`, { params })
+      .pipe(map((response) => response.data));
+  }
+
+  adminCase(id: string) {
+    return this.get<AdminCaseDetailDto>(`admin/cases/${id}`);
+  }
+
+  createAdminCase(body: CreateCaseRequest) {
+    return this.post<AdminCaseDetailDto>('admin/cases', body);
+  }
+
+  updateAdminCase(id: string, body: UpdateCaseRequest) {
+    return this.patch<AdminCaseDetailDto>(`admin/cases/${id}`, body);
+  }
+
+  updateAdminCaseStatus(id: string, body: UpdateCaseStatusRequest) {
+    return this.patch<AdminCaseDetailDto>(`admin/cases/${id}/status`, body);
+  }
+
+  adminExercises(caseId: string) {
+    return this.get<AdminExerciseListItemDto[]>(`admin/cases/${caseId}/exercises`);
+  }
+
+  createAdminExercise(caseId: string, body: CreateExerciseRequest) {
+    return this.post<AdminExerciseDetailDto>(`admin/cases/${caseId}/exercises`, body);
+  }
+
+  adminExercise(id: string) {
+    return this.get<AdminExerciseDetailDto>(`admin/exercises/${id}`);
+  }
+
+  updateAdminExercise(id: string, body: UpdateExerciseRequest) {
+    return this.patch<AdminExerciseDetailDto>(`admin/exercises/${id}`, body);
+  }
+
+  updateAdminExerciseStatus(id: string, body: UpdateExerciseStatusRequest) {
+    return this.patch<AdminExerciseDetailDto>(`admin/exercises/${id}/status`, body);
+  }
+
+  adminExerciseResourceCheck(id: string) {
+    return this.get<AdminExerciseDetailDto['resourceCheck']>(`admin/exercises/${id}/resource-check`);
+  }
+
   private get<T>(path: string) {
     return this.http.get<ApiResponse<T>>(`${this.baseUrl}/${path}`).pipe(map((response) => response.data));
   }
@@ -90,6 +187,11 @@ export class ApiClientService {
   private post<T>(path: string, body: unknown) {
     return this.http
       .post<ApiResponse<T>>(`${this.baseUrl}/${path}`, body)
+      .pipe(map((response) => response.data));
+  }
+  private patch<T>(path: string, body: unknown) {
+    return this.http
+      .patch<ApiResponse<T>>(`${this.baseUrl}/${path}`, body)
       .pipe(map((response) => response.data));
   }
 }

@@ -1,12 +1,15 @@
 import type { Routes } from '@angular/router';
 import { authGuard, roleGuard } from './core/auth.guards';
-import { AdminCasesPlaceholderComponent } from './features/admin/admin-cases-placeholder.component';
+import { AdminCaseEditorComponent } from './features/admin/cases/admin-case-editor.component';
+import { AdminCasesComponent } from './features/admin/cases/admin-cases.component';
+import { AdminExerciseEditorComponent } from './features/admin/exercises/admin-exercise-editor.component';
 import { AccessStatusComponent } from './features/auth/access-status.component';
 import { CaseDetailComponent } from './features/cases/case-detail.component';
 import { CourseHomeComponent } from './features/course-home/course-home.component';
 import { LoginComponent } from './features/login/login.component';
 import { SubmissionDetailComponent } from './features/submissions/submission-detail.component';
 import { TeacherDashboardComponent } from './features/teacher/teacher-dashboard.component';
+import { TeacherSectionComponent } from './features/teacher/teacher-section.component';
 import { WorkspaceComponent } from './features/workspace/workspace.component';
 
 export const routes: Routes = [
@@ -42,6 +45,10 @@ export const routes: Routes = [
     data: { roles: ['STUDENT', 'TEACHER', 'ADMIN'] },
   },
   {
+    path: 'teacher/sections/:sectionId', component: TeacherSectionComponent, title: '教学班管理',
+    canActivate: [authGuard, roleGuard], data: { roles: ['TEACHER'] },
+  },
+  {
     path: 'teacher',
     component: TeacherDashboardComponent,
     title: '教师面板',
@@ -50,9 +57,33 @@ export const routes: Routes = [
   },
   {
     path: 'admin/cases',
-    component: AdminCasesPlaceholderComponent,
+    component: AdminCasesComponent,
     title: '内容管理',
     canActivate: [authGuard, roleGuard],
+    data: { roles: ['ADMIN'] },
+  },
+  {
+    path: 'admin/cases/new',
+    component: AdminCaseEditorComponent,
+    title: '新建案例',
+    canActivate: [authGuard, roleGuard],
+    canDeactivate: [(component: AdminCaseEditorComponent) => component.canDeactivate()],
+    data: { roles: ['ADMIN'] },
+  },
+  {
+    path: 'admin/cases/:caseId',
+    component: AdminCaseEditorComponent,
+    title: '案例管理',
+    canActivate: [authGuard, roleGuard],
+    canDeactivate: [(component: AdminCaseEditorComponent) => component.canDeactivate()],
+    data: { roles: ['ADMIN'] },
+  },
+  {
+    path: 'admin/exercises/:exerciseId',
+    component: AdminExerciseEditorComponent,
+    title: '练习管理',
+    canActivate: [authGuard, roleGuard],
+    canDeactivate: [(component: AdminExerciseEditorComponent) => component.canDeactivate()],
     data: { roles: ['ADMIN'] },
   },
   { path: '**', component: AccessStatusComponent, title: '页面不存在', data: { status: 404 } },

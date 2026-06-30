@@ -18,15 +18,24 @@ type CaseManifest = {
   type: 'EXACT_MODELING' | 'HEURISTIC';
   difficulty: 'EASY' | 'MEDIUM' | 'HARD';
   knowledge_points: string[];
+};
+
+type ExerciseManifest = {
+  exercise_code: string;
+  title: string;
+  description: string;
+  kind: 'EXACT_MODELING' | 'HEURISTIC' | 'REPORT' | 'MIXED';
   datasets: Array<{
-    id: string;
+    key: string;
     label: string;
     visibility: 'PUBLIC' | 'HIDDEN';
     path: string;
   }>;
-  template: string;
   entrypoint: string;
-  expected_output: Record<string, unknown>;
+  output_schema: Record<string, unknown>;
+  template: { path: string; filename: string; language: string };
+  rubric: string;
+  validator: string;
 };
 
 type RubricFile = {
@@ -367,36 +376,42 @@ async function main() {
   await seedCase(course.id, 'case_04', 4);
   await seedCase(course.id, 'case_16', 16);
 
-  const manifest = readJson<CaseManifest>('course-assets/cases/case_01/case_manifest.json');
-  const rubric = readJson<RubricFile>('course-assets/cases/case_01/rubric.json');
-  const template = readText('course-assets/cases/case_01/template.py');
+  const manifest = readJson<ExerciseManifest>(
+    'course-assets/cases/case_01/exercises/production_planning/exercise_manifest.json',
+  );
+  const rubric = readJson<RubricFile>(
+    `course-assets/cases/case_01/exercises/production_planning/${manifest.rubric}`,
+  );
+  const template = readText(
+    `course-assets/cases/case_01/exercises/production_planning/${manifest.template.path}`,
+  );
 
   const exercise = await prisma.exercise.upsert({
     where: { id: 'exercise-case01-production-planning' },
     update: {
       caseId: case01.id,
-      code: 'production_planning',
-      title: 'case_01 生产分配线性规划实验',
-      description: '使用 PuLP 完成生产分配线性规划建模、求解与结果解释。',
-      kind: exerciseKind(manifest.type),
+      code: manifest.exercise_code,
+      title: manifest.title,
+      description: manifest.description,
+      kind: manifest.kind,
       status: 'PUBLISHED',
-      assetPath: 'course-assets/cases/case_01',
+      assetPath: 'course-assets/cases/case_01/exercises/production_planning',
       entrypoint: manifest.entrypoint,
-      outputSchema: jsonValue(manifest.expected_output),
+      outputSchema: jsonValue(manifest.output_schema),
       guide: case01Guide(),
       sortOrder: 1,
     },
     create: {
       id: 'exercise-case01-production-planning',
       caseId: case01.id,
-      code: 'production_planning',
-      title: 'case_01 生产分配线性规划实验',
-      description: '使用 PuLP 完成生产分配线性规划建模、求解与结果解释。',
-      kind: exerciseKind(manifest.type),
+      code: manifest.exercise_code,
+      title: manifest.title,
+      description: manifest.description,
+      kind: manifest.kind,
       status: 'PUBLISHED',
-      assetPath: 'course-assets/cases/case_01',
+      assetPath: 'course-assets/cases/case_01/exercises/production_planning',
       entrypoint: manifest.entrypoint,
-      outputSchema: jsonValue(manifest.expected_output),
+      outputSchema: jsonValue(manifest.output_schema),
       guide: case01Guide(),
       sortOrder: 1,
     },
@@ -407,7 +422,7 @@ async function main() {
       where: {
         exerciseId_key: {
           exerciseId: exercise.id,
-          key: dataset.id,
+          key: dataset.key,
         },
       },
       update: {
@@ -418,7 +433,7 @@ async function main() {
       },
       create: {
         exerciseId: exercise.id,
-        key: dataset.id,
+        key: dataset.key,
         label: dataset.label,
         visibility: dataset.visibility,
         path: dataset.path,
@@ -434,9 +449,9 @@ async function main() {
     data: {
       exerciseId: exercise.id,
       language: 'python',
-      filename: manifest.template,
+      filename: manifest.template.filename,
       content: template,
-      path: `course-assets/cases/case_01/${manifest.template}`,
+      path: `course-assets/cases/case_01/exercises/production_planning/${manifest.template.path}`,
       isDefault: true,
     },
   });

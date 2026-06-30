@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Minimal local evaluator for the week-1 teaching platform build.
+"""Local Exercise-aware evaluator for the teaching platform.
 
 This runner intentionally stays small: it loads one case manifest, executes a
-student module's solve(data, params=None), calls the case validator, and writes a
-standard result JSON. Sandboxing and full scoring are later-week tasks.
+student module's solve(data, params=None), calls the Exercise validator, and
+writes a standard result JSON. Sandboxing and full scoring are later-week tasks.
 """
 
 from __future__ import annotations
@@ -21,15 +21,18 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES_DIR = ROOT / "course-assets" / "cases"
+LEGACY_CASE_EXERCISES = {"case_01": "production_planning"}
+sys.dont_write_bytecode = True
 
 
 def main() -> int:
     args = parse_args()
     result = evaluate(
-        case_id=args.case,
+        exercise_code=args.exercise or LEGACY_CASE_EXERCISES.get(args.case),
         dataset_id=args.dataset,
         submission_path=Path(args.submission),
         output_path=Path(args.output) if args.output else None,
+        legacy_case_id=args.case,
     )
     text = json.dumps(result, ensure_ascii=False, indent=2)
     if args.output:
@@ -42,7 +45,9 @@ def main() -> int:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate one local submission")
-    parser.add_argument("--case", required=True, help="Case id, e.g. case_01")
+    target = parser.add_mutually_exclusive_group(required=True)
+    target.add_argument("--exercise", help="Exercise code, e.g. production_planning")
+    target.add_argument("--case", help="Legacy Case id compatibility, e.g. case_01")
     parser.add_argument("--dataset", default="small", help="Dataset id")
     parser.add_argument("--submission", required=True, help="Path to solution.py")
     parser.add_argument("--output", help="Optional path to write result JSON")
@@ -50,23 +55,29 @@ def parse_args() -> argparse.Namespace:
 
 
 def evaluate(
-    case_id: str,
+    exercise_code: str | None,
     dataset_id: str,
     submission_path: Path,
     output_path: Path | None = None,
+    legacy_case_id: str | None = None,
 ) -> dict[str, Any]:
-    case_dir = CASES_DIR / case_id
-    manifest_path = case_dir / "case_manifest.json"
-    if not manifest_path.exists():
-        return error_result("INVALID_OUTPUT", f"找不到案例 manifest: {manifest_path}")
+    if not exercise_code:
+        return error_result("INVALID_OUTPUT", f"案例 {legacy_case_id} 没有兼容的练习映射")
 
     try:
+        located = locate_exercise(exercise_code, legacy_case_id)
+        if located is None:
+            return error_result("INVALID_OUTPUT", f"找不到练习 manifest: {exercise_code}")
+        case_id, exercise_dir, manifest_path = located
         manifest = read_json(manifest_path)
         dataset_path = resolve_dataset_path(manifest_path, manifest, dataset_id)
         data = read_json(dataset_path)
-        rubric = read_json(case_dir / manifest["rubric"])
+        rubric = read_json(exercise_dir / manifest["rubric"])
         solution_module = load_module(submission_path.resolve(), "student_solution")
-        validator_module = load_module((case_dir / manifest["validator"]).resolve(), f"{case_id}_validator")
+        validator_module = load_module(
+            (exercise_dir / manifest["validator"]).resolve(),
+            f"{case_id}_{exercise_code}_validator",
+        )
         solve = getattr(solution_module, manifest.get("entrypoint", "solve"), None)
         validate = getattr(validator_module, "validate", None)
         if not callable(solve):
@@ -84,6 +95,7 @@ def evaluate(
         result["artifacts"].update(
             {
                 "caseId": case_id,
+                "exerciseId": exercise_code,
                 "datasetId": dataset_id,
                 "submission": str(submission_path),
                 "output": str(output_path) if output_path else None,
@@ -100,12 +112,25 @@ def evaluate(
 
 def resolve_dataset_path(manifest_path: Path, manifest: dict[str, Any], dataset_id: str) -> Path:
     for dataset in manifest.get("datasets", []):
-        if dataset.get("id") == dataset_id:
+        if dataset.get("key") == dataset_id:
             path = (manifest_path.parent / dataset["path"]).resolve()
             if not path.exists():
                 raise FileNotFoundError(f"数据集文件不存在: {path}")
             return path
-    raise ValueError(f"案例 {manifest.get('case_id')} 不存在数据集: {dataset_id}")
+    raise ValueError(f"练习 {manifest.get('exercise_code')} 不存在数据集: {dataset_id}")
+
+
+def locate_exercise(exercise_code: str, case_id: str | None = None) -> tuple[str, Path, Path] | None:
+    case_dirs = [CASES_DIR / case_id] if case_id else sorted(CASES_DIR.glob("*"))
+    matches = []
+    for case_dir in case_dirs:
+        exercise_dir = case_dir / "exercises" / exercise_code
+        manifest_path = exercise_dir / "exercise_manifest.json"
+        if manifest_path.exists():
+            matches.append((case_dir.name, exercise_dir, manifest_path))
+    if len(matches) > 1:
+        raise ValueError(f"练习编码不唯一，无法定位: {exercise_code}")
+    return matches[0] if matches else None
 
 
 def read_json(path: Path) -> Any:

@@ -73,7 +73,7 @@ export const CASE_01_CONTENT: Case01Content = {
   ],
   resourcePackage: {
     description:
-      '资源包用于本地调试和课后练习，包含本案例的 Python 提交模板、公开数据集和一份文件说明。',
+      '资源包用于本地调试和课后练习，包含当前练习的 Python 提交模板、公开数据集、输出规范和文件说明。',
     items: [
       { name: 'README.md', description: '说明资源包内每个文件的用途和基本使用步骤。' },
       { name: 'template/template.py', description: '学生提交模板，在 solve(data, params=None) 中补全求解逻辑。' },

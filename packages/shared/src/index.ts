@@ -392,6 +392,13 @@ export interface AdminCaseDetailDto extends AdminCaseListItemDto {
   exercises: AdminExerciseListItemDto[];
 }
 
+export interface AdminCaseListQuery {
+  page?: number;
+  pageSize?: number;
+  status?: CaseStatus;
+  keyword?: string;
+}
+
 export interface AdminExerciseListItemDto {
   id: string;
   caseId: string;
@@ -408,6 +415,7 @@ export interface AdminExerciseDetailDto extends AdminExerciseListItemDto {
   entrypoint?: string;
   outputSchema?: Record<string, unknown>;
   guide?: Record<string, unknown>;
+  case: Pick<AdminCaseListItemDto, 'id' | 'code' | 'title' | 'status'>;
   resourceCheck: ExerciseResourceCheckDto;
 }
 
@@ -441,6 +449,18 @@ export interface SectionCaseReleaseDto {
   case?: Pick<AdminCaseListItemDto, 'id' | 'code' | 'title' | 'status'>;
 }
 
+export interface TeacherSectionStudentDto {
+  enrollmentId: string;
+  status: EnrollmentStatus;
+  student: Pick<UserDto, 'id' | 'name' | 'studentNo' | 'email'>;
+}
+
+export interface TeacherCaseReleaseOverviewDto {
+  section: Pick<ClassSectionDto, 'id' | 'name'>;
+  availableCases: Array<Pick<AdminCaseListItemDto, 'id' | 'code' | 'title' | 'subtitle' | 'difficulty' | 'status' | 'sortOrder'>>;
+  releases: SectionCaseReleaseDto[];
+}
+
 export interface TeacherAssignmentDto {
   id: string;
   sectionId: string;
@@ -471,7 +491,9 @@ export interface StudentCaseDto {
   sortOrder: number;
   visibleFrom?: string;
   visibleUntil?: string;
-  assignments: Array<Pick<StudentAssignmentDto, 'id' | 'title' | 'status' | 'availability' | 'opensAt' | 'dueAt'>>;
+  assignments: Array<Pick<StudentAssignmentDto, 'id' | 'title' | 'status' | 'availability' | 'opensAt' | 'dueAt'> & {
+    exercise: Pick<AdminExerciseListItemDto, 'id' | 'code' | 'title' | 'kind'>;
+  }>;
 }
 
 export interface StudentCaseDetailDto extends StudentCaseDto {
@@ -522,7 +544,7 @@ export const CreateCaseRequestSchema = z.object({
   knowledgePoints: z.array(z.string().trim().min(1)).default([]),
   summary: z.string().trim().optional(),
   content: z.record(z.string(), z.unknown()).optional(),
-  sortOrder: z.number().int().default(0),
+  sortOrder: z.number().int().min(0).default(0),
 });
 export type CreateCaseRequest = z.infer<typeof CreateCaseRequestSchema>;
 
@@ -531,6 +553,13 @@ export type UpdateCaseRequest = z.infer<typeof UpdateCaseRequestSchema>;
 
 export const UpdateCaseStatusRequestSchema = z.object({ status: CaseStatusSchema });
 export type UpdateCaseStatusRequest = z.infer<typeof UpdateCaseStatusRequestSchema>;
+
+export const AdminCaseListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  status: CaseStatusSchema.optional(),
+  keyword: z.string().trim().max(100).optional(),
+});
 
 export const CreateExerciseRequestSchema = z.object({
   code: z.string().trim().min(1).max(100),
@@ -541,7 +570,7 @@ export const CreateExerciseRequestSchema = z.object({
   outputSchema: z.record(z.string(), z.unknown()).optional(),
   guide: z.record(z.string(), z.unknown()).optional(),
   assetPath: z.string().trim().min(1),
-  sortOrder: z.number().int().default(0),
+  sortOrder: z.number().int().min(0).default(0),
 });
 export type CreateExerciseRequest = z.infer<typeof CreateExerciseRequestSchema>;
 
@@ -551,7 +580,7 @@ export type UpdateExerciseRequest = z.infer<typeof UpdateExerciseRequestSchema>;
 export const UpdateExerciseStatusRequestSchema = z.object({ status: ExerciseStatusSchema });
 export type UpdateExerciseStatusRequest = z.infer<typeof UpdateExerciseStatusRequestSchema>;
 
-function validWindow(value: { visibleFrom?: string; visibleUntil?: string }) {
+function validWindow(value: { visibleFrom?: string | null; visibleUntil?: string | null }) {
   return !value.visibleFrom || !value.visibleUntil || Date.parse(value.visibleFrom) <= Date.parse(value.visibleUntil);
 }
 
@@ -566,9 +595,17 @@ export type CreateSectionCaseReleaseRequest = z.infer<typeof CreateSectionCaseRe
 export const CreateCaseReleaseRequestSchema = CreateSectionCaseReleaseRequestSchema;
 export type CreateCaseReleaseRequest = CreateSectionCaseReleaseRequest;
 
-export const UpdateSectionCaseReleaseRequestSchema = z.object({
+export const BatchCreateSectionCaseReleasesRequestSchema = z.object({
+  caseIds: z.array(z.string().min(1)).min(1),
   visibleFrom: optionalDateTime,
   visibleUntil: optionalDateTime,
+  sortOrder: z.number().int().default(0),
+}).refine(validWindow, { message: 'visibleFrom must not be later than visibleUntil' });
+export type BatchCreateSectionCaseReleasesRequest = z.infer<typeof BatchCreateSectionCaseReleasesRequestSchema>;
+
+export const UpdateSectionCaseReleaseRequestSchema = z.object({
+  visibleFrom: z.iso.datetime().nullable().optional(),
+  visibleUntil: z.iso.datetime().nullable().optional(),
   sortOrder: z.number().int().optional(),
 }).refine(validWindow, { message: 'visibleFrom must not be later than visibleUntil' });
 export type UpdateSectionCaseReleaseRequest = z.infer<typeof UpdateSectionCaseReleaseRequestSchema>;

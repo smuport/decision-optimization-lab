@@ -57,6 +57,7 @@ export class SubmissionsController {
     });
 
     const result = await this.runner.evaluate({
+      exerciseCode: assignment.exercise.code,
       caseCode: assignment.exercise.case.code,
       datasetKey: body.datasetKey ?? 'small',
       code,

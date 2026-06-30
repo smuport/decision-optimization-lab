@@ -1,0 +1,42 @@
+{
+  "exercise_code": "production_planning",
+  "title": "case_01 生产分配线性规划实验",
+  "description": "使用 PuLP 完成生产分配线性规划建模、求解与结果解释。",
+  "kind": "EXACT_MODELING",
+  "entrypoint": "solve",
+  "output_schema": {
+    "objective": "number",
+    "solution": "dict: product -> quantity",
+    "metrics": {
+      "shadow_prices": "dict: resource -> number",
+      "resource_usage": "dict: resource -> number"
+    }
+  },
+  "template": {
+    "path": "template.py",
+    "filename": "template.py",
+    "language": "python"
+  },
+  "datasets": [
+    {
+      "key": "small",
+      "label": "小规模",
+      "visibility": "PUBLIC",
+      "path": "datasets/public/data_small.json"
+    },
+    {
+      "key": "medium",
+      "label": "中规模",
+      "visibility": "PUBLIC",
+      "path": "datasets/public/data_medium.json"
+    },
+    {
+      "key": "large",
+      "label": "大规模",
+      "visibility": "PUBLIC",
+      "path": "datasets/public/data_large.json"
+    }
+  ],
+  "rubric": "rubric.json",
+  "validator": "validator.py"
+}

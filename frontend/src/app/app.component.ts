@@ -20,7 +20,6 @@ import { AuthStateService } from './core/auth-state.service';
         <nav class="topnav" aria-label="主导航">
           @if (auth.user()?.role === 'STUDENT') {
             <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">课程</a>
-            <a routerLink="/cases/case_01" routerLinkActive="active">案例</a>
           } @else if (auth.user()?.role === 'TEACHER') {
             <a routerLink="/teacher" routerLinkActive="active">教学班管理</a>
           } @else if (auth.user()?.role === 'ADMIN') {

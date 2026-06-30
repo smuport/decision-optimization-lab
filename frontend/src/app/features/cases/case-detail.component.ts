@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin, of, switchMap } from 'rxjs';
-import type { DatasetDownloadInfo, ExerciseDetail, ExerciseListItem } from '@decision-lab/shared';
+import type { DatasetDownloadInfo, ExerciseDetail, StudentCaseDetailDto } from '@decision-lab/shared';
 import { ApiClientService } from '../../core/api-client.service';
 import { saveDownload } from '../../core/file-download';
 import {
@@ -38,7 +38,7 @@ import {
           </div>
           <div class="hero-actions">
             <a class="secondary-button" routerLink="/">返回课程首页</a>
-            @if (isCase01() && exerciseDetail()?.id) {
+            @if (isCase01() && primaryAssignment()) {
               <a class="primary-button" [routerLink]="['/exercises', exerciseDetail()?.id, 'workspace']">
                 进入工作区
               </a>
@@ -106,23 +106,23 @@ import {
                     </table>
                   </div>
 
-                  <section class="resource-package">
+                  @if (primaryAssignment()) { <section class="resource-package">
                     <div>
-                      <p class="section-kicker">案例资源包</p>
+                      <p class="section-kicker">练习资源包</p>
                       <h3>下载模板和公开数据集</h3>
                       <p>{{ case01.resourcePackage.description }}</p>
                     </div>
                     <button class="primary-button" type="button" (click)="downloadResources()">下载练习资源包</button>
-                  </section>
+                  </section> }
 
-                  <div class="resource-list">
+                  @if (primaryAssignment()) { <div class="resource-list">
                     @for (item of case01.resourcePackage.items; track item.name) {
                       <div>
                         <strong>{{ item.name }}</strong>
                         <span>{{ item.description }}</span>
                       </div>
                     }
-                  </div>
+                  </div> } @else { <div class="status-strip">该案例当前暂无已发布练习，可先阅读教学内容。</div> }
                 </article>
               }
 
@@ -172,7 +172,7 @@ import {
                         下面代码与 small 数据集中的利润和资源约束一致，可作为学生理解 PuLP 建模语法的最小样例。
                       </p>
                     </div>
-                    <button class="secondary-button" type="button" (click)="downloadResources()">下载练习资源包</button>
+                    @if (primaryAssignment()) { <button class="secondary-button" type="button" (click)="downloadResources()">下载练习资源包</button> }
                   </div>
 
                   <pre class="code-block"><code>{{ case01.pulpCode }}</code></pre>
@@ -202,7 +202,7 @@ import {
                         在线工作区已接入模板、草稿保存、数据集选择和真实评测，可在提交前先核对输出结构与评分规则。
                       </p>
                     </div>
-                    @if (exerciseDetail()?.id) {
+                    @if (primaryAssignment()) {
                       <a class="primary-button" [routerLink]="['/exercises', exerciseDetail()?.id, 'workspace']">
                         进入工作区
                       </a>
@@ -286,20 +286,17 @@ export class CaseDetailComponent implements OnInit {
   protected readonly activeTab = signal<CaseTabKey>('intro');
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
-  protected readonly exercise = signal<ExerciseListItem | null>(null);
+  protected readonly studentCase = signal<StudentCaseDetailDto | null>(null);
   protected readonly exerciseDetail = signal<ExerciseDetail | null>(null);
   protected readonly datasetDownloads = signal<DatasetDownloadInfo[]>([]);
   protected readonly templateContent = signal<string | null>(null);
   protected readonly caseSummary = computed<CaseSummaryContent | null>(() => {
-    const exercise = this.exercise();
-    if (exercise) {
+    const item = this.studentCase();
+    if (item) {
       return {
-        code: exercise.case.code,
-        title: exercise.case.title,
-        subtitle: exercise.case.subtitle ?? '',
-        difficulty: exercise.case.difficulty as CaseSummaryContent['difficulty'],
-        knowledgePoints: exercise.case.knowledgePoints,
-        summary: exercise.case.subtitle ?? '',
+        code: item.code, title: item.title, subtitle: item.subtitle ?? '',
+        difficulty: item.difficulty as CaseSummaryContent['difficulty'], knowledgePoints: item.knowledgePoints,
+        summary: item.summary ?? item.subtitle ?? '',
       };
     }
 
@@ -320,21 +317,19 @@ export class CaseDetailComponent implements OnInit {
     }
 
     this.api
-      .exercises()
+      .studentCase(caseId)
       .pipe(
-        switchMap((exercises) => {
-          const exercise =
-            exercises.find((item) => item.case.code === caseId || item.case.id === caseId) ?? null;
-          this.exercise.set(exercise);
-
-          if (!exercise) {
+        switchMap((item) => {
+          this.studentCase.set(item);
+          const exerciseId = item.assignments[0]?.exercise.id;
+          if (!exerciseId) {
             return of({ detail: null, datasets: [], template: null });
           }
 
           return forkJoin({
-            detail: this.api.exercise(exercise.id),
-            datasets: this.api.exerciseDatasets(exercise.id),
-            template: this.api.exerciseTemplate(exercise.id),
+            detail: this.api.exercise(exerciseId),
+            datasets: this.api.exerciseDatasets(exerciseId),
+            template: this.api.exerciseTemplate(exerciseId),
           });
         }),
       )
@@ -353,8 +348,10 @@ export class CaseDetailComponent implements OnInit {
   }
 
   protected isCase01() {
-    return this.currentCaseId() === CASE_01_CONTENT.code;
+    return this.studentCase()?.code === CASE_01_CONTENT.code;
   }
+
+  protected primaryAssignment() { return this.studentCase()?.assignments[0] ?? null; }
 
   protected difficultyText(value?: string) {
     const map: Record<string, string> = {
