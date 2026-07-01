@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { forkJoin, of, switchMap } from 'rxjs';
-import type { DatasetDownloadInfo, ExerciseDetail, StudentCaseDetailDto } from '@decision-lab/shared';
+import { of, switchMap } from 'rxjs';
+import type { StudentAssignmentDetailDto, StudentCaseDetailDto } from '@decision-lab/shared';
 import { ApiClientService } from '../../core/api-client.service';
 import { saveDownload } from '../../core/file-download';
 import {
@@ -39,7 +39,7 @@ import {
           <div class="hero-actions">
             <a class="secondary-button" routerLink="/">返回课程首页</a>
             @if (isCase01() && primaryAssignment()) {
-              <a class="primary-button" [routerLink]="['/exercises', exerciseDetail()?.id, 'workspace']">
+              <a class="primary-button" [routerLink]="['/assignments', primaryAssignment()?.id, 'workspace']">
                 进入工作区
               </a>
             }
@@ -203,7 +203,7 @@ import {
                       </p>
                     </div>
                     @if (primaryAssignment()) {
-                      <a class="primary-button" [routerLink]="['/exercises', exerciseDetail()?.id, 'workspace']">
+                      <a class="primary-button" [routerLink]="['/assignments', primaryAssignment()?.id, 'workspace']">
                         进入工作区
                       </a>
                     }
@@ -287,8 +287,7 @@ export class CaseDetailComponent implements OnInit {
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
   protected readonly studentCase = signal<StudentCaseDetailDto | null>(null);
-  protected readonly exerciseDetail = signal<ExerciseDetail | null>(null);
-  protected readonly datasetDownloads = signal<DatasetDownloadInfo[]>([]);
+  protected readonly assignmentDetail = signal<StudentAssignmentDetailDto | null>(null);
   protected readonly templateContent = signal<string | null>(null);
   protected readonly caseSummary = computed<CaseSummaryContent | null>(() => {
     const item = this.studentCase();
@@ -321,23 +320,17 @@ export class CaseDetailComponent implements OnInit {
       .pipe(
         switchMap((item) => {
           this.studentCase.set(item);
-          const exerciseId = item.assignments[0]?.exercise.id;
-          if (!exerciseId) {
-            return of({ detail: null, datasets: [], template: null });
+          const assignmentId = item.assignments[0]?.id;
+          if (!assignmentId) {
+            return of(null);
           }
-
-          return forkJoin({
-            detail: this.api.exercise(exerciseId),
-            datasets: this.api.exerciseDatasets(exerciseId),
-            template: this.api.exerciseTemplate(exerciseId),
-          });
+          return this.api.studentAssignment(assignmentId);
         }),
       )
       .subscribe({
-        next: ({ detail, datasets, template }) => {
-          this.exerciseDetail.set(detail);
-          this.datasetDownloads.set(datasets);
-          this.templateContent.set(template?.content ?? null);
+        next: (assignment) => {
+          this.assignmentDetail.set(assignment);
+          this.templateContent.set(assignment?.template?.content ?? null);
           this.loading.set(false);
         },
         error: () => {
@@ -364,13 +357,13 @@ export class CaseDetailComponent implements OnInit {
   }
 
   protected templateFilename() {
-    return this.exerciseDetail()?.template?.filename ?? 'template.py';
+    return this.assignmentDetail()?.template?.filename ?? 'template.py';
   }
 
   protected downloadResources() {
-    const id = this.exerciseDetail()?.id;
+    const id = this.primaryAssignment()?.id;
     if (!id) return;
-    this.api.exerciseResources(id).subscribe({
+    this.api.assignmentResources(id).subscribe({
       next: (blob) => saveDownload(blob, `${this.currentCaseId() ?? 'exercise'}-resources.zip`),
       error: () => this.error.set('练习资源包下载失败。'),
     });

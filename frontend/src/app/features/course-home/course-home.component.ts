@@ -1,7 +1,8 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
-import type { CurrentCourseResponse, StudentCaseDto } from '@decision-lab/shared';
+import type { CurrentCourseResponse, StudentAssignmentDto, StudentCaseDto } from '@decision-lab/shared';
 import { ApiClientService } from '../../core/api-client.service';
 import { AuthStateService } from '../../core/auth-state.service';
 
@@ -27,6 +28,7 @@ import { AuthStateService } from '../../core/auth-state.service';
       } @else if (error()) {
         <div class="status-strip error">{{ error() }}</div>
       } @else {
+        @if (notice()) { <div class="status-strip">{{ notice() }}</div> }
         <div class="summary-grid">
           <section class="metric-card">
             <span>学期</span>
@@ -72,6 +74,8 @@ import { AuthStateService } from '../../core/auth-state.service';
           </div>
         </section>
 
+        <section class="content-band"><div class="band-heading"><div><p class="section-kicker">我的作业</p><h2>按作业规则进入工作区</h2></div></div><div class="assignment-list">@for (item of assignments(); track item.id) { <article class="assignment-row"><div><span class="case-code">{{ item.exercise.case.code }}</span><h3>{{ item.title }}</h3><p>{{ item.exercise.title }} · {{ availabilityText(item.availability) }}</p></div><div class="assignment-meta"><span>剩余次数：{{ item.remainingAttempts ?? '不限' }}</span><a class="primary-button" [routerLink]="['/assignments', item.id, 'workspace']">{{ item.canSubmit ? '进入工作区' : '查看作业' }}</a></div></article> } @empty { <p class="empty-state">当前没有已发布作业。</p> }</div></section>
+
         <section class="content-band">
           <div class="band-heading">
             <div>
@@ -98,21 +102,26 @@ import { AuthStateService } from '../../core/auth-state.service';
 })
 export class CourseHomeComponent implements OnInit {
   private readonly api = inject(ApiClientService);
+  private readonly route = inject(ActivatedRoute);
   protected readonly auth = inject(AuthStateService);
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
   protected readonly course = signal<CurrentCourseResponse | null>(null);
   protected readonly cases = signal<StudentCaseDto[]>([]);
+  protected readonly assignments = signal<StudentAssignmentDto[]>([]);
+  protected readonly notice = signal(this.route.snapshot.queryParamMap.get('notice'));
   protected readonly sectionCount = computed(() => this.course()?.currentTerm?.sections.length ?? 0);
 
   ngOnInit() {
     forkJoin({
       course: this.api.currentCourse(),
       cases: this.api.studentCases(),
+      assignments: this.api.studentAssignments(),
     }).subscribe({
-      next: ({ course, cases }) => {
+      next: ({ course, cases, assignments }) => {
         this.course.set(course);
         this.cases.set(cases);
+        this.assignments.set(assignments);
         this.loading.set(false);
       },
       error: () => {
@@ -134,4 +143,6 @@ export class CourseHomeComponent implements OnInit {
       minute: '2-digit',
     }).format(new Date(value));
   }
+
+  protected availabilityText(value: string) { return ({ UPCOMING: '尚未开放', OPEN: '开放中', LATE: '迟交阶段', CLOSED: '已关闭' } as Record<string,string>)[value] ?? value; }
 }

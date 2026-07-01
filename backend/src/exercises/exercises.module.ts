@@ -8,5 +8,6 @@ import { ExerciseAssetsService } from './exercise-assets.service';
 @Module({
   controllers: [ExercisesController, AdminExercisesController],
   providers: [ResourcePackageService, AdminExercisesService, ExerciseAssetsService],
+  exports: [ResourcePackageService, AdminExercisesService],
 })
 export class ExercisesModule {}

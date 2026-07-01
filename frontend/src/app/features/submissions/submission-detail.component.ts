@@ -23,7 +23,7 @@ import { ApiClientService } from '../../core/api-client.service';
           </div>
           <div class="hero-actions">
             <a class="secondary-button" routerLink="/">返回课程首页</a>
-            <a class="primary-button" [routerLink]="['/exercises', submission()?.exercise?.id, 'workspace']">返回工作区</a>
+            <a class="primary-button" [routerLink]="['/assignments', submission()?.assignmentId, 'workspace']">返回工作区</a>
           </div>
         </header>
 

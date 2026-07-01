@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from './auth/auth.module';
+import { AssignmentsModule } from './assignments/assignments.module';
 import { CasesModule } from './cases/cases.module';
 import { CaseReleasesModule } from './case-releases/case-releases.module';
 import { CoursesModule } from './courses/courses.module';
@@ -15,6 +16,7 @@ import { TeacherModule } from './teacher/teacher.module';
   imports: [
     PrismaModule,
     AuthModule,
+    AssignmentsModule,
     CasesModule,
     CaseReleasesModule,
     CoursesModule,

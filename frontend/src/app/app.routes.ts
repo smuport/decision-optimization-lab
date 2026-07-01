@@ -10,7 +10,9 @@ import { LoginComponent } from './features/login/login.component';
 import { SubmissionDetailComponent } from './features/submissions/submission-detail.component';
 import { TeacherDashboardComponent } from './features/teacher/teacher-dashboard.component';
 import { TeacherSectionComponent } from './features/teacher/teacher-section.component';
+import { TeacherAssignmentEditorComponent } from './features/teacher/teacher-assignment-editor.component';
 import { WorkspaceComponent } from './features/workspace/workspace.component';
+import { LegacyWorkspaceRedirectComponent } from './features/workspace/legacy-workspace-redirect.component';
 
 export const routes: Routes = [
   { path: 'auth/login', component: LoginComponent, title: '登录' },
@@ -32,10 +34,14 @@ export const routes: Routes = [
   },
   {
     path: 'exercises/:exerciseId/workspace',
-    component: WorkspaceComponent,
+    component: LegacyWorkspaceRedirectComponent,
     title: '实验工作区',
     canActivate: [authGuard, roleGuard],
     data: { roles: ['STUDENT'] },
+  },
+  {
+    path: 'assignments/:assignmentId/workspace', component: WorkspaceComponent, title: '作业工作区',
+    canActivate: [authGuard, roleGuard], data: { roles: ['STUDENT'] },
   },
   {
     path: 'submissions/:submissionId',
@@ -46,6 +52,18 @@ export const routes: Routes = [
   },
   {
     path: 'teacher/sections/:sectionId', component: TeacherSectionComponent, title: '教学班管理',
+    canActivate: [authGuard, roleGuard], data: { roles: ['TEACHER'] },
+  },
+  {
+    path: 'teacher/sections/:sectionId/assignments', component: TeacherSectionComponent, title: '作业管理',
+    canActivate: [authGuard, roleGuard], data: { roles: ['TEACHER'], tab: 'assignments' },
+  },
+  {
+    path: 'teacher/assignments/new', component: TeacherAssignmentEditorComponent, title: '新建作业',
+    canActivate: [authGuard, roleGuard], data: { roles: ['TEACHER'] },
+  },
+  {
+    path: 'teacher/assignments/:assignmentId/edit', component: TeacherAssignmentEditorComponent, title: '作业管理',
     canActivate: [authGuard, roleGuard], data: { roles: ['TEACHER'] },
   },
   {

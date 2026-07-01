@@ -480,6 +480,15 @@ export interface TeacherAssignmentDto {
   };
 }
 
+export interface TeacherAssignmentOverviewDto {
+  section: Pick<ClassSectionDto, 'id' | 'name'>;
+  availableExercises: Array<AdminExerciseListItemDto & {
+    case: Pick<AdminCaseListItemDto, 'id' | 'code' | 'title'>;
+    resourceCheck: ExerciseResourceCheckDto;
+  }>;
+  assignments: TeacherAssignmentDto[];
+}
+
 export interface StudentCaseDto {
   id: string;
   code: string;
@@ -511,16 +520,21 @@ export interface StudentAssignmentDto {
   maxAttempts?: number;
   allowLate: boolean;
   attemptCount: number;
-  exercise: AdminExerciseListItemDto & {
+  remainingAttempts?: number;
+  canSubmit: boolean;
+  isLate: boolean;
+  exercise: Pick<AdminExerciseListItemDto, 'id' | 'caseId' | 'code' | 'title' | 'description' | 'kind' | 'status' | 'sortOrder'> & {
     case: Pick<AdminCaseListItemDto, 'id' | 'code' | 'title'>;
   };
 }
 
 export interface StudentAssignmentDetailDto extends StudentAssignmentDto {
   datasets: Array<Pick<DatasetDto, 'id' | 'key' | 'label' | 'visibility' | 'sortOrder'>>;
-  template?: Pick<TemplateDto, 'id' | 'filename' | 'language'>;
+  template?: Pick<TemplateDto, 'id' | 'filename' | 'language' | 'content'>;
+  rubric?: Pick<RubricDto, 'id' | 'version' | 'totalScore' | 'rules'>;
   outputSchema?: Record<string, unknown>;
   guide?: Record<string, unknown>;
+  resourceDownloadUrl: string;
 }
 
 const optionalDateTime = z.iso.datetime().optional();
@@ -615,7 +629,7 @@ export type UpdateCaseReleaseRequest = UpdateSectionCaseReleaseRequest;
 export const UpdateSectionCaseReleaseStatusRequestSchema = z.object({ status: CaseReleaseStatusSchema });
 export type UpdateSectionCaseReleaseStatusRequest = z.infer<typeof UpdateSectionCaseReleaseStatusRequestSchema>;
 
-function validAssignmentWindow(value: { opensAt?: string; dueAt?: string }) {
+function validAssignmentWindow(value: { opensAt?: string | null; dueAt?: string | null }) {
   return !value.opensAt || !value.dueAt || Date.parse(value.opensAt) <= Date.parse(value.dueAt);
 }
 
@@ -634,10 +648,10 @@ export type CreateAssignmentRequest = CreateTeacherAssignmentRequest;
 
 export const UpdateTeacherAssignmentRequestSchema = z.object({
   title: z.string().trim().min(1).max(200).optional(),
-  description: z.string().trim().optional(),
-  opensAt: optionalDateTime,
-  dueAt: optionalDateTime,
-  maxAttempts: z.number().int().positive().optional(),
+  description: z.string().trim().nullable().optional(),
+  opensAt: z.iso.datetime().nullable().optional(),
+  dueAt: z.iso.datetime().nullable().optional(),
+  maxAttempts: z.number().int().positive().nullable().optional(),
   allowLate: z.boolean().optional(),
 }).refine(validAssignmentWindow, { message: 'opensAt must not be later than dueAt' });
 export type UpdateTeacherAssignmentRequest = z.infer<typeof UpdateTeacherAssignmentRequestSchema>;

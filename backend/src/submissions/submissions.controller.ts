@@ -4,6 +4,7 @@ import type { Prisma } from '@prisma/client';
 import { CurrentUser, Roles } from '../auth/auth.decorators';
 import { SectionAccessService } from '../auth/section-access.service';
 import type { CurrentUserData } from '../auth/auth.types';
+import { AssignmentsService } from '../assignments/assignments.service';
 import { ok } from '../common/api-response';
 import { parseRequest } from '../common/request-validation';
 import { PrismaService } from '../prisma/prisma.service';
@@ -15,6 +16,7 @@ export class SubmissionsController {
     private readonly prisma: PrismaService,
     private readonly runner: RunnerAdapterService,
     private readonly access: SectionAccessService,
+    private readonly assignments: AssignmentsService,
   ) {}
 
   @Roles('STUDENT')
@@ -25,36 +27,8 @@ export class SubmissionsController {
     @CurrentUser() user: CurrentUserData,
   ) {
     const body = parseRequest(SubmissionCreateRequestSchema, rawBody);
-    await this.access.assertAssignmentAccess(user, assignmentId);
-    const assignment = await this.prisma.assignment.findUniqueOrThrow({
-      where: { id: assignmentId },
-      include: {
-        exercise: {
-          include: {
-            case: true,
-          },
-        },
-      },
-    });
-    const attemptNumber =
-      (await this.prisma.submission.count({
-        where: {
-          assignmentId,
-          userId: user.id,
-        },
-      })) + 1;
     const code = body.code;
-
-    const submission = await this.prisma.submission.create({
-      data: {
-        assignmentId,
-        userId: user.id,
-        status: 'RUNNING',
-        attemptNumber,
-        isLate: assignment.dueAt ? new Date() > assignment.dueAt : false,
-        codeText: code,
-      },
-    });
+    const { assignment, submission } = await this.assignments.startSubmission(user, assignmentId, code);
 
     const result = await this.runner.evaluate({
       exerciseCode: assignment.exercise.code,

@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import type { TeacherCaseReleaseOverviewDto, TeacherProgressResponse, TeacherSectionStudentDto } from '@decision-lab/shared';
+import type { TeacherAssignmentOverviewDto, TeacherCaseReleaseOverviewDto, TeacherSectionStudentDto } from '@decision-lab/shared';
 import { finalize, forkJoin } from 'rxjs';
 import { ApiClientService } from '../../core/api-client.service';
 import { hasValidReleaseWindow, toggleReleaseSelection } from './teacher-section-policy';
@@ -49,10 +49,10 @@ type Tab = 'students' | 'cases' | 'assignments';
             </section>
           }
           @case ('assignments') {
-            <section class="content-band teacher-section"><div class="band-heading"><div><p class="section-kicker">已发布作业</p><h2>{{ progress()?.assignmentCount ?? 0 }} 个作业</h2></div></div>
-              <div class="teacher-table-wrap"><table class="teacher-table"><thead><tr><th>案例</th><th>作业</th><th>提交</th><th>通过</th><th>平均分</th></tr></thead><tbody>
-                @for (item of progress()?.assignments ?? []; track item.id) { <tr><td>{{ item.caseCode }}</td><td><strong>{{ item.title }}</strong><small>{{ item.exerciseTitle }}</small></td><td>{{ item.submissionCount }}</td><td>{{ item.successCount }}</td><td>{{ item.averageScore }} 分</td></tr> }
-                @empty { <tr><td colspan="5" class="empty-cell">当前教学班还没有作业。</td></tr> }
+            <section class="content-band teacher-section"><div class="band-heading teacher-section-heading"><div><p class="section-kicker">作业管理</p><h2>{{ assignmentOverview()?.assignments?.length ?? 0 }} 个作业</h2></div><a class="primary-button" [routerLink]="['/teacher/assignments/new']" [queryParams]="{ sectionId }">新建作业</a></div>
+              <div class="teacher-table-wrap"><table class="teacher-table"><thead><tr><th>案例 / 练习</th><th>作业</th><th>状态</th><th>开放时间</th><th>截止时间</th><th></th></tr></thead><tbody>
+                @for (item of assignmentOverview()?.assignments ?? []; track item.id) { <tr><td><span class="case-code">{{ item.exercise?.case?.code }}</span><small>{{ item.exercise?.title }}</small></td><td><strong>{{ item.title }}</strong></td><td><span class="status-label" [class.success]="item.status === 'PUBLISHED'">{{ assignmentStatus(item.status) }} · {{ availabilityStatus(item.availability) }}</span></td><td>{{ item.opensAt ? date(item.opensAt) : '立即' }}</td><td>{{ item.dueAt ? date(item.dueAt) : '不限' }}</td><td><a class="table-link" [routerLink]="['/teacher/assignments', item.id, 'edit']">管理</a></td></tr> }
+                @empty { <tr><td colspan="6" class="empty-cell">当前教学班还没有作业。</td></tr> }
               </tbody></table></div>
             </section>
           }
@@ -62,9 +62,9 @@ type Tab = 'students' | 'cases' | 'assignments';
 })
 export class TeacherSectionComponent implements OnInit {
   private readonly api = inject(ApiClientService); private readonly route = inject(ActivatedRoute);
-  protected readonly tab = signal<Tab>('students'); protected readonly loading = signal(true); protected readonly saving = signal(false);
+  protected readonly tab = signal<Tab>((this.route.snapshot.data['tab'] as Tab | undefined) ?? 'students'); protected readonly loading = signal(true); protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null); protected readonly actionMessage = signal<string | null>(null); protected readonly actionError = signal(false);
-  protected readonly overview = signal<TeacherCaseReleaseOverviewDto | null>(null); protected readonly students = signal<TeacherSectionStudentDto[]>([]); protected readonly progress = signal<TeacherProgressResponse | null>(null);
+  protected readonly overview = signal<TeacherCaseReleaseOverviewDto | null>(null); protected readonly students = signal<TeacherSectionStudentDto[]>([]); protected readonly assignmentOverview = signal<TeacherAssignmentOverviewDto | null>(null);
   protected readonly selectedCaseIds = signal(new Set<string>()); protected keyword = ''; protected visibleFrom = ''; protected visibleUntil = '';
   protected readonly releaseDrafts = signal<Record<string, { visibleFrom: string; visibleUntil: string; sortOrder: number }>>({});
   protected readonly selectableCases = computed(() => { const value = this.keyword.trim().toLowerCase(); const released = new Set(this.overview()?.releases.map((item) => item.caseId)); return (this.overview()?.availableCases ?? []).filter((item) => !released.has(item.id) && (!value || item.code.toLowerCase().includes(value) || item.title.toLowerCase().includes(value))); });
@@ -77,12 +77,14 @@ export class TeacherSectionComponent implements OnInit {
   protected saveRelease(id: string) { const draft = this.releaseDraft(id); if (!hasValidReleaseWindow(draft.visibleFrom, draft.visibleUntil)) { this.showAction('结束时间不能早于开始时间。', true); return; } this.api.updateTeacherCaseRelease(id, { visibleFrom: draft.visibleFrom ? this.toIso(draft.visibleFrom) : null, visibleUntil: draft.visibleUntil ? this.toIso(draft.visibleUntil) : null, sortOrder: draft.sortOrder }).subscribe({ next: () => { this.showAction('发布设置已保存。', false); this.reloadOverview(); }, error: () => this.showAction('发布设置保存失败。', true) }); }
   protected archive(id: string) { if (!window.confirm('归档后，该案例将从学生当前案例列表中移除。确认归档？')) return; this.api.updateTeacherCaseReleaseStatus(id, { status: 'ARCHIVED' }).subscribe({ next: () => { this.showAction('案例发布已归档。', false); this.reloadOverview(); }, error: () => this.showAction('归档失败。', true) }); }
   protected releaseStatus(value: string) { return ({ DRAFT: '草稿', PUBLISHED: '已发布', ARCHIVED: '已归档' } as Record<string,string>)[value] ?? value; }
+  protected assignmentStatus(value: string) { return ({ DRAFT: '草稿', PUBLISHED: '已发布', CLOSED: '已关闭', ARCHIVED: '已归档' } as Record<string,string>)[value] ?? value; }
+  protected availabilityStatus(value: string) { return ({ UPCOMING: '未开放', OPEN: '开放中', LATE: '迟交', CLOSED: '不可提交' } as Record<string,string>)[value] ?? value; }
   protected windowText(from?: string, until?: string) { return `${from ? this.date(from) : '立即'} 至 ${until ? this.date(until) : '不限'}`; }
-  private reload() { if (!this.sectionId) { this.error.set('缺少教学班编号。'); this.loading.set(false); return; } forkJoin({ overview: this.api.teacherCaseReleases(this.sectionId), students: this.api.teacherSectionStudents(this.sectionId), progress: this.api.teacherProgress(this.sectionId) }).pipe(finalize(() => this.loading.set(false))).subscribe({ next: ({overview,students,progress}) => { this.applyOverview(overview); this.students.set(students); this.progress.set(progress); }, error: () => this.error.set('教学班数据读取失败。') }); }
+  private reload() { if (!this.sectionId) { this.error.set('缺少教学班编号。'); this.loading.set(false); return; } forkJoin({ overview: this.api.teacherCaseReleases(this.sectionId), students: this.api.teacherSectionStudents(this.sectionId), assignments: this.api.teacherAssignments(this.sectionId) }).pipe(finalize(() => this.loading.set(false))).subscribe({ next: ({overview,students,assignments}) => { this.applyOverview(overview); this.students.set(students); this.assignmentOverview.set(assignments); }, error: () => this.error.set('教学班数据读取失败。') }); }
   private reloadOverview() { this.api.teacherCaseReleases(this.sectionId).subscribe((value) => this.applyOverview(value)); }
   private applyOverview(value: TeacherCaseReleaseOverviewDto) { this.overview.set(value); this.releaseDrafts.set(Object.fromEntries(value.releases.map((item) => [item.id, { visibleFrom: this.toLocalInput(item.visibleFrom), visibleUntil: this.toLocalInput(item.visibleUntil), sortOrder: item.sortOrder }]))); }
   private showAction(message: string, error: boolean) { this.actionMessage.set(message); this.actionError.set(error); }
   private toIso(value: string) { return value ? new Date(value).toISOString() : undefined; }
   private toLocalInput(value?: string) { if (!value) return ''; const date = new Date(value); const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000); return local.toISOString().slice(0, 16); }
-  private date(value: string) { return new Intl.DateTimeFormat('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(value)); }
+  protected date(value: string) { return new Intl.DateTimeFormat('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(value)); }
 }

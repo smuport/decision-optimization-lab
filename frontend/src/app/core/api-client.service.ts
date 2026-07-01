@@ -36,6 +36,12 @@ import type {
   UpdateSectionCaseReleaseStatusRequest,
   StudentCaseDetailDto,
   StudentCaseDto,
+  StudentAssignmentDetailDto,
+  StudentAssignmentDto,
+  TeacherAssignmentDto,
+  TeacherAssignmentOverviewDto,
+  CreateTeacherAssignmentRequest,
+  UpdateTeacherAssignmentRequest,
   UserDto,
 } from '@decision-lab/shared';
 
@@ -129,6 +135,38 @@ export class ApiClientService {
   studentCase(id: string) {
     return this.get<StudentCaseDetailDto>(`me/cases/${id}`);
   }
+
+  studentAssignments() {
+    return this.get<StudentAssignmentDto[]>('me/assignments');
+  }
+
+  studentAssignment(id: string) {
+    return this.get<StudentAssignmentDetailDto>(`me/assignments/${id}`);
+  }
+
+  assignmentResources(id: string) {
+    return this.http.get(`${this.baseUrl}/assignments/${id}/resources/download`, { responseType: 'blob' });
+  }
+
+  teacherAssignments(sectionId: string) {
+    return this.get<TeacherAssignmentOverviewDto>(`teacher/sections/${sectionId}/assignments`);
+  }
+
+  teacherAssignment(id: string) {
+    return this.get<TeacherAssignmentDto>(`teacher/assignments/${id}`);
+  }
+
+  createTeacherAssignment(sectionId: string, body: CreateTeacherAssignmentRequest) {
+    return this.post<TeacherAssignmentDto>(`teacher/sections/${sectionId}/assignments`, body);
+  }
+
+  updateTeacherAssignment(id: string, body: UpdateTeacherAssignmentRequest) {
+    return this.patch<TeacherAssignmentDto>(`teacher/assignments/${id}`, body);
+  }
+
+  publishTeacherAssignment(id: string) { return this.post<TeacherAssignmentDto>(`teacher/assignments/${id}/publish`, {}); }
+  closeTeacherAssignment(id: string) { return this.post<TeacherAssignmentDto>(`teacher/assignments/${id}/close`, {}); }
+  archiveTeacherAssignment(id: string) { return this.post<TeacherAssignmentDto>(`teacher/assignments/${id}/archive`, {}); }
 
   adminCases(query: AdminCaseListQuery = {}) {
     let params = new HttpParams();
