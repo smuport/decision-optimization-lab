@@ -169,6 +169,7 @@ decision-optimization-lab/
 | `backend/src/runner-adapter` | Week2 同步调用 `runner/evaluate.py` 的本地评测适配层 | Week2 Day3 初始化 |
 | `backend/src/auth` | JWT 登录、当前用户、全局认证/角色 guard、装饰器和教学班归属服务 | Week3 Day2 已完成 |
 | `backend/src/courses` | 当前课程、学期、班级和任务读取接口 | Week2 Day3 初始化 |
+| `backend/src/assignments` | 教师作业管理、学生当前作业、Availability、资源与提交前置规则 | Week3 Day6 已完成 |
 | `backend/src/enrollments` | 教师端学生名单导入接口 | Week2 Day3 初始化 |
 | `backend/src/exercises` | 实验列表、详情、数据集、模板读取接口 | Week2 Day3 初始化 |
 | `backend/src/submissions` | 提交创建、状态、结果查询接口 | Week2 Day3 初始化 |

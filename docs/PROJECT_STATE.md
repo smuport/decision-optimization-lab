@@ -20,6 +20,8 @@ Week3 Day4 completed: ADMIN Exercise management, case01 Exercise-owned asset mig
 
 Week3 Day5 completed: TEACHER section students and three-tab management, PUBLISHED Case catalog/search/batch release, release windows/order/archive, strict `/me/cases` visibility, no-assignment read-only behavior, automated tests, production compilation, and real two-section API isolation acceptance have passed.
 
+Week3 Day6 completed: TEACHER Assignment draft/edit/publish/close/archive, transactional publication and submission gates, student assignment list/detail, availability/attempt/late rules, Assignment-centric workspace/resources/submission, legacy workspace migration, automated tests, production builds, and real two-section API acceptance have passed.
+
 Follow-up completed: case01 teaching resources now provide a real downloadable resource package while preserving JSON APIs for preview/workspace initialization.
 
 The project has completed Week1 demo assets and Week2 Day1 through Day7. Version 1.1 has passed automated and real database API acceptance; screenshot-style visual acceptance remains unavailable in the current Codex runtime.
@@ -350,7 +352,7 @@ The project has completed Week1 demo assets and Week2 Day1 through Day7. Version
 
 ## Next Implementation Step
 
-Start Week3 Day6 from `plans/WEEK3_BUILD_PLAN.md`: implement Assignment lifecycle and availability, migrate workspace/resource/submission access to Assignment, and complete attempt/late-submission enforcement.
+Start Week3 Day7 from `plans/WEEK3_BUILD_PLAN.md`: run the complete ADMIN/TEACHER/STUDENT integration acceptance, rebuild/seed verification, compatibility audit, demo walkthrough, and Version 1.2 documentation closeout.
 
 ---
 
@@ -358,7 +360,7 @@ Start Week3 Day6 from `plans/WEEK3_BUILD_PLAN.md`: implement Assignment lifecycl
 
 - Shared response contracts are now wired through the frontend API client; UI-only view models may remain local.
 - Week2 feature implementation and runtime database API acceptance are complete.
-- Week3 Day1 through Day5 are complete; Day6 Assignment management and Assignment-centric student entry are next.
+- Week3 Day1 through Day6 are complete; Day7 integrated Version 1.2 acceptance and documentation closeout are next.
 - Week3 remains case01-only and focuses on the management control plane rather than new cases or infrastructure.
 - HTTP Authorization interceptor, global error toast/handler, and 404 page are useful polish, but non-blocking for Week2 completion.
 - `GET /api/v1/submissions/:id` now exposes `codeText` for Week2 read-only code replay.

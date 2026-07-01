@@ -116,6 +116,10 @@ Day5 学生课程首页和案例详情已切换到 `/me/cases`。无 Assignment 
 
 Workspace 唯一学生入口为 `/assignments/:assignmentId/workspace`。页面先读取 Assignment 权限、计算状态和 Exercise，再加载模板、公开数据集与练习资源。草稿 key 使用 `decision-lab.workspace.draft:{userId}:{assignmentId}`。
 
+Day6 已完成该迁移：课程首页和 Case 详情均链接 Assignment 工作区；工作区直接消费 `StudentAssignmentDetailDto`，显示 Availability、提交/剩余次数、截止时间和不可提交原因，并通过 Assignment 下载资源和创建提交。旧 `/exercises/:exerciseId/workspace` 会读取当前学生作业：唯一匹配时重定向，多匹配或无匹配时回课程首页显示选择提示。
+
+教师端已实现 `/teacher/assignments/new` 与 `/teacher/assignments/:assignmentId/edit`，可从本班 PUBLISHED Case 下的 PUBLISHED Exercise 创建草稿，查看资源检查，并执行保存、发布、关闭和归档。发布后表单只读，避免已产生提交后修改规则。
+
 ## 一、页面架构
 
 ### 1.1 整体布局

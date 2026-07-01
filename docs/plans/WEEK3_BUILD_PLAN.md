@@ -336,6 +336,8 @@ course-assets/cases/case_01/exercises/production_planning/
 
 ### Day 6：TEACHER Assignment 管理与 STUDENT 入口迁移
 
+> 实施状态（2026-06-30）：已完成。教师 Assignment 草稿/编辑/发布/关闭/归档、原子发布校验、学生 `/me/assignments`、Availability、次数与迟交约束、Assignment 工作区和资源入口、旧 Exercise 链接迁移、自动化测试及真实双教学班 API 验收均通过。
+
 #### 目标
 
 - 完成教师从已发布 Case 选择 Exercise 并发布作业的流程。

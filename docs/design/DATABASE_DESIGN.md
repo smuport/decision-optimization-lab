@@ -362,6 +362,10 @@ Assignment 的学生可用状态不单独持久化，根据字段计算：
 
 2026-06-30 已将 `SectionCaseRelease` 接入教师控制面和学生查询链路。当前可见性查询同时要求 ACTIVE Enrollment、Release=PUBLISHED，并按包含边界的 `visibleFrom <= now <= visibleUntil` 判断；空时间边界不限制。Release 归档只改变当前目录可见性，不删除 Case、Assignment、Submission 或历史评测关系。批量发布使用事务写入，且仍受 `(sectionId, caseId)` 唯一约束保护。
 
+### 0.10 Week3 Day6 Assignment 实施状态
+
+2026-06-30 已将 Assignment 状态、开放窗口、迟交规则和最大次数接入教师管理、学生读取、资源下载和提交链路。Availability 保持计算字段，不新增持久化列。Submission 创建事务会重新读取 Assignment，计算状态、统计当前学生尝试次数并分配 `attemptNumber`/`isLate`；CLOSED/ARCHIVED Assignment 及其历史 Submission 不删除，仍可按权限读取。
+
 `pnpm verify:week3:day1` 已在本地 PostgreSQL 完成空库 migration、重复 seed、现有 Week2 数据库 migration 和事务化数据关系检查。迁移前后均为 20 条 Submission、20 条 RunResult 和 0 条 Score；原 Assignment id 及其外键保持不变。演示班有一个 PUBLISHED case01 Release，可见性对照班没有 Release。
 
 ## 一、ER 图（实体关系概览）
